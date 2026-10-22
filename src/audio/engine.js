@@ -2,7 +2,7 @@ import { Reverb } from "smplr";
 import { LAYERS } from "../song/model.js";
 import { notesAt } from "../music/arrange.js";
 import { createClock } from "./clock.js";
-import { createMixer } from "./mixer.js";
+import { createMixer, effectiveGains } from "./mixer.js";
 import { loadInstrument, loadKit, ringSampleMap } from "./loaders.js";
 
 // Replaced instruments keep sounding their scheduled tails before disposal.
@@ -10,7 +10,8 @@ const DISPOSE_DELAY_MS = 4000;
 const PREVIEW_SEC = 0.6;
 
 const idFor = (song, layer) => (layer === "drums" ? song.drums.kit : song[layer].instrument);
-const sendFor = (song, layer) => song[layer].mix.space / 100;
+// The shared reverb bypasses the layer gain nodes, so the send carries mute/solo/volume itself.
+const sendFor = (song, layer) => (song[layer].mix.space / 100) * effectiveGains(song)[layer];
 
 export function createEngine({ onStep = () => {}, onStatus = () => {} } = {}) {
   let ctx = null;
@@ -23,6 +24,7 @@ export function createEngine({ onStep = () => {}, onStatus = () => {} } = {}) {
   let ringMap = null;
   let ringKey = null;
   const stepTimers = new Set();
+  const retiring = new Set(); // swapped-out instruments awaiting disposal
   // inst/id: what plays now; requested: latest id asked for; token: latest switch.
   const slots = Object.fromEntries(LAYERS.map((l) => [l, { inst: null, id: null, groups: [], requested: null, token: 0 }]));
 
@@ -96,7 +98,13 @@ export function createEngine({ onStep = () => {}, onStatus = () => {} } = {}) {
       ringKey = null;
       updateRingMap();
     }
-    if (old) setTimeout(() => old.dispose?.(), DISPOSE_DELAY_MS);
+    if (old) {
+      retiring.add(old);
+      setTimeout(() => {
+        retiring.delete(old);
+        old.dispose?.();
+      }, DISPOSE_DELAY_MS);
+    }
     onStatus({ layer, state: "ready" });
   }
 
@@ -114,9 +122,9 @@ export function createEngine({ onStep = () => {}, onStatus = () => {} } = {}) {
   }
 
   function start(next) {
-    if (startPromise) return startPromise;
     if (next) setSong(next);
     wantPlaying = true;
+    if (startPromise) return startPromise;
     startPromise = (async () => {
       ensureContext();
       if (ctx.state === "suspended") await ctx.resume();
@@ -148,11 +156,12 @@ export function createEngine({ onStep = () => {}, onStatus = () => {} } = {}) {
     for (const t of stepTimers) clearTimeout(t);
     stepTimers.clear();
     for (const l of LAYERS) slots[l].inst?.stop();
+    for (const inst of retiring) inst.stop();
   }
 
   function preview(layer, note) {
     ensureContext();
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
     const slot = slots[layer];
     if (!slot.inst) {
       if (song && slot.requested === null) load(layer, idFor(song, layer));

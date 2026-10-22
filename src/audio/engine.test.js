@@ -126,7 +126,7 @@ describe("engine", () => {
     expect(chords.opts.kit).toBe("MusyngKite");
     expect(new Set([chords, bass, melody].map((i) => i.opts.destination)).size).toBe(3);
     expect(bass.output.addEffect).toHaveBeenCalledWith("reverb", expect.anything(), 0);
-    expect(melody.output.addEffect).toHaveBeenCalledWith("reverb", expect.anything(), 0.25);
+    expect(melody.output.addEffect).toHaveBeenCalledWith("reverb", expect.anything(), 0.25 * 0.8);
   });
 
   it("schedules drums by ring sample and melodic notes with duration", async () => {
@@ -237,7 +237,7 @@ describe("engine", () => {
     const song = createDefaultSong();
     await engine.start(song);
     engine.setSong(setMix(song, "chords", { space: 60 }));
-    expect(insts("Soundfont", "electric_piano_1")[0].output.setEffectMix).toHaveBeenCalledWith("reverb", 0.6);
+    expect(insts("Soundfont", "electric_piano_1")[0].output.setEffectMix).toHaveBeenCalledWith("reverb", 0.6 * 0.8);
   });
 
   it("stop stops the clock and every instrument", async () => {
@@ -259,6 +259,76 @@ describe("engine", () => {
     expect(bass.start).toHaveBeenCalledWith(expect.objectContaining({ note: 40, time: 3 }));
     engine.preview("drums", "snare");
     expect(insts("DrumMachine")[0].start).toHaveBeenCalledWith(expect.objectContaining({ note: "snare" }));
+  });
+
+  it("muting a layer zeroes its reverb send; solo zeroes the others", async () => {
+    const engine = createEngine({ onStep, onStatus });
+    const song = createDefaultSong();
+    await engine.start(song);
+    const melody = insts("Soundfont", "marimba")[0];
+    const chords = insts("Soundfont", "electric_piano_1")[0];
+    const dm = insts("DrumMachine")[0];
+    engine.setSong(setMix(song, "melody", { mute: true }));
+    expect(melody.output.setEffectMix).toHaveBeenLastCalledWith("reverb", 0);
+    expect(chords.output.setEffectMix).toHaveBeenLastCalledWith("reverb", 0.2);
+    engine.setSong(setMix(song, "melody", { solo: true }));
+    expect(melody.output.setEffectMix).toHaveBeenLastCalledWith("reverb", 0.2);
+    expect(chords.output.setEffectMix).toHaveBeenLastCalledWith("reverb", 0);
+    expect(dm.output.setEffectMix).toHaveBeenLastCalledWith("reverb", 0);
+  });
+
+  it("a switched-in instrument gets the gain-scaled send", async () => {
+    const engine = createEngine({ onStep, onStatus });
+    const song = setMix(createDefaultSong(), "melody", { mute: true });
+    await engine.start(song);
+    expect(insts("Soundfont", "marimba")[0].output.addEffect).toHaveBeenCalledWith("reverb", expect.anything(), 0);
+    engine.setSong(setInstrument(song, "melody", "flute"));
+    await flush();
+    expect(insts("Soundfont", "flute")[0].output.addEffect).toHaveBeenCalledWith("reverb", expect.anything(), 0);
+  });
+
+  it("play-stop-play during loading starts the clock", async () => {
+    const engine = createEngine({ onStep, onStatus });
+    const song = createDefaultSong();
+    h.state.auto = false;
+    const p1 = engine.start(song);
+    engine.stop();
+    const p2 = engine.start(song);
+    expect(p2).toBe(p1);
+    for (const i of h.state.created) i.resolve();
+    await p1;
+    expect(h.state.clock.start).toHaveBeenCalledTimes(1);
+    expect(engine.isPlaying()).toBe(true);
+  });
+
+  it("stop also silences an instrument retiring after a switch", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const engine = createEngine({ onStep, onStatus });
+    const song = melodySong();
+    await engine.start(song);
+    const old = insts("Soundfont", "marimba")[0];
+    engine.setSong(setInstrument(song, "melody", "flute"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(insts("Soundfont", "flute")).toHaveLength(1);
+    old.stop.mockClear();
+    engine.stop();
+    expect(old.stop).toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(old.dispose).toHaveBeenCalled();
+    old.stop.mockClear();
+    engine.stop();
+    expect(old.stop).not.toHaveBeenCalled();
+  });
+
+  it("preview swallows a failed resume", async () => {
+    const engine = createEngine({ onStep, onStatus });
+    await engine.start(createDefaultSong());
+    const ctx = h.state.contexts[0];
+    ctx.state = "suspended";
+    ctx.resume = () => Promise.reject(new Error("blocked"));
+    engine.preview("bass", 40);
+    await flush();
+    expect(insts("Soundfont", "electric_bass_finger")[0].start).toHaveBeenCalled();
   });
 });
 
