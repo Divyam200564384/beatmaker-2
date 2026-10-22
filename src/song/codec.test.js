@@ -1,3 +1,4 @@
+/* global Buffer */
 import { describe, it, expect } from "vitest";
 import { encodeSong, decodeSong } from "./codec.js";
 import {
