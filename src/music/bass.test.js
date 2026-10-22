@@ -18,6 +18,16 @@ describe("bassNotesForBar", () => {
     const s = setChord(setBassStyle(createDefaultSong(), "walking"), 1, null);
     expect(bassNotesForBar(s, 0).map((x) => x.note)).toEqual([36, 38, 40, 36]);
   });
+  it("walking approaches the next root from below, in its closest octave", () => {
+    const w = (p0, p1) => {
+      let s = setBassStyle(createDefaultSong(), "walking");
+      s = setChord(setChord(s, 0, p0), 1, p1);
+      return bassNotesForBar(s, 0).map((x) => x.note);
+    };
+    expect(w("iii", "ii")).toEqual([40, 41, 43, 36]);
+    expect(w("V", "IV")).toEqual([43, 45, 47, 40]);
+    expect(w("I", "V")).toEqual([36, 38, 40, 41]);
+  });
   it("null chord gives nothing", () => {
     expect(bassNotesForBar(setChord(createDefaultSong(), 0, null), 0)).toEqual([]);
   });

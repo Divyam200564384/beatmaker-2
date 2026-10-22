@@ -3,12 +3,9 @@ import { chordRoot, scaleNotesBetween } from "./theory.js";
 function walkingApproach(r, nextDegree, key, s2) {
   if (!nextDegree) return r;
   const nr = chordRoot(nextDegree, key);
-  let best = null;
-  for (const o of [-12, 0, 12]) {
-    const below = scaleNotesBetween(nr + o - 12, nr + o - 1, key).pop();
-    if (best === null || Math.abs(below - s2) < Math.abs(best - s2)) best = below;
-  }
-  return best;
+  let R = nr;
+  for (const c of [nr - 12, nr + 12]) if (Math.abs(c - s2) < Math.abs(R - s2)) R = c;
+  return scaleNotesBetween(R - 2, R - 1, key).pop();
 }
 
 export function bassNotesForBar(song, bar) {

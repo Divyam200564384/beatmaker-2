@@ -52,4 +52,32 @@ describe("codec", () => {
     expect(() => encodeSong(setKit(createDefaultSong(), "nope"))).toThrow("bad song");
     expect(() => encodeSong(setInstrument(createDefaultSong(), "bass", "nope"))).toThrow("bad song");
   });
+  describe("rejects out-of-range fields", () => {
+    const tamper = (pos, n, val) => {
+      const bytes = Buffer.from(encodeSong(createDefaultSong()), "base64url");
+      for (let i = 0; i < n; i++) {
+        const bit = (val >> (n - 1 - i)) & 1;
+        const p = pos + i;
+        bytes[p >> 3] = (bytes[p >> 3] & ~(0x80 >> (p & 7))) | (bit ? 0x80 >> (p & 7) : 0);
+      }
+      return bytes.toString("base64url");
+    };
+    it.each([
+      ["key 12", 15, 4, 12],
+      ["key 15", 15, 4, 15],
+      ["kit index 10", 19, 4, 10],
+      ["hits 17", 25, 5, 17],
+      ["prog value 8", 125, 4, 8],
+      ["prog value 14", 125, 4, 14],
+      ["melody row 12", 146, 4, 12],
+      ["melody row 15", 146, 4, 15],
+      ["volume 101", 330, 7, 101],
+      ["space 101", 339, 7, 101],
+    ])("%s", (_n, pos, bits, val) => {
+      expect(() => decodeSong(tamper(pos, bits, val))).toThrow("bad song");
+    });
+    it("sanity: untouched positions still decode", () => {
+      expect(decodeSong(tamper(15, 4, 0)).key).toBe(0);
+    });
+  });
 });
