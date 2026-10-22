@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { safeGet, safeSet } from './storage.js'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  localStorage.clear()
+})
 
 describe('storage', () => {
   it('round-trips JSON values', () => {
@@ -10,6 +13,10 @@ describe('storage', () => {
   })
   it('safeGet returns null when getItem throws', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('x') })
+    expect(safeGet('k')).toBeNull()
+  })
+  it('safeGet returns null on corrupt JSON', () => {
+    localStorage.setItem('k', '{bad')
     expect(safeGet('k')).toBeNull()
   })
   it('safeSet returns false when setItem throws', () => {
