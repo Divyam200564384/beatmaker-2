@@ -53,4 +53,11 @@ describe("pickRingSample", () => {
     expect(pickRingSample(b, "openhat").name).toBe("ohihat");
     expect(pickRingSample(b, "cowbell")).toEqual({ name: "chihat", exact: false });
   });
+  it("prefers an exact group name over a substring match", () => {
+    const mr10 = ["brush", "chihat", "crash", "cymbal", "hitom", "kick", "kick1", "lowtom", "midtom", "ohihat", "shaker", "shorthi", "shortsn", "snare"];
+    expect(pickRingSample(mr10, "tom")).toEqual({ name: "midtom", exact: true });
+    const lm2 = ["kick-alt", "kick", "hhclosed-long", "hhclosed", "snare"];
+    expect(pickRingSample(lm2, "kick")).toEqual({ name: "kick", exact: true });
+    expect(pickRingSample(lm2, "hat")).toEqual({ name: "hhclosed", exact: true });
+  });
 });

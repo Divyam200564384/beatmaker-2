@@ -90,7 +90,7 @@ export const RING_CANDIDATES = {
   snare: ["snare", "sd", "clap", "cp"],
   hat: ["hihat-close", "hhclosed", "closedhat", "chihat", "hithat", "hihat-closed", "ch", "hat"],
   openhat: ["hihat-open", "hhopen", "openhat", "ohihat", "oh"],
-  tom: ["tom-mid", "mid-tom", "tom-m", "tom"],
+  tom: ["tom-mid", "mid-tom", "tom-m", "midtom", "tom"],
   cowbell: ["cowbell", "cb"],
   rim: ["rimshot", "rim", "stick", "clave", "rs"],
 };
@@ -104,6 +104,12 @@ const FALLBACK = {
 
 function findGroup(groupNames, want) {
   const cands = RING_CANDIDATES[want] || [];
+  // An exact name for any candidate beats a substring hit ("kick" over "kick-alt").
+  const lower = groupNames.map((g) => g.toLowerCase());
+  for (const c of cands) {
+    const i = lower.indexOf(c);
+    if (i !== -1) return groupNames[i];
+  }
   for (const c of cands) {
     const hit = groupNames.find((g) => g.toLowerCase().includes(c));
     if (hit !== undefined) return hit;
