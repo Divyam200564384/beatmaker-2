@@ -8,15 +8,22 @@ const RESYNC_AHEAD = 0.05;
 export function createClock({ context, getBpm, onStep }) {
   let timer = null;
   let step = 0;
-  let nextTime = 0;
+  let lastTime = null; // time of the last emitted step; null before the first
+  let pendingTime = 0; // time for the next step when lastTime is null
 
   function tick() {
-    if (nextTime < context.currentTime - RESYNC_LATE) {
-      nextTime = context.currentTime + RESYNC_AHEAD;
-    }
-    while (nextTime < context.currentTime + HORIZON) {
-      onStep(step, nextTime);
-      nextTime += 60 / getBpm() / 4;
+    for (;;) {
+      // Next step's time is computed lazily so tempo changes apply at once.
+      let t = lastTime === null ? pendingTime : lastTime + 60 / getBpm() / 4;
+      if (t < context.currentTime - RESYNC_LATE) {
+        t = context.currentTime + RESYNC_AHEAD;
+      }
+      if (t >= context.currentTime + HORIZON) {
+        if (lastTime === null) pendingTime = t;
+        return;
+      }
+      onStep(step, t);
+      lastTime = t;
       step = (step + 1) % STEPS;
     }
   }
@@ -25,7 +32,8 @@ export function createClock({ context, getBpm, onStep }) {
     start() {
       if (timer !== null) return;
       step = 0;
-      nextTime = context.currentTime + START_DELAY;
+      lastTime = null;
+      pendingTime = context.currentTime + START_DELAY;
       timer = setInterval(tick, INTERVAL_MS);
       tick();
     },

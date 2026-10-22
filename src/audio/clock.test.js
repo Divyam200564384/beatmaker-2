@@ -58,14 +58,15 @@ describe("clock", () => {
     clock.start();
     advance(0.3);
     const before = calls.length;
+    const prev = calls[before - 1].time;
     bpm = 60;
     advance(1);
+    expect(calls.length).toBeGreaterThan(before);
+    expect(calls[before].time).toBeCloseTo(prev + 0.25, 10);
     const after = calls.slice(before - 1);
-    // the step already queued keeps its time; later gaps use the new 0.25 s
-    const gaps = after.slice(1).map((c, i) => c.time - after[i].time);
-    expect(gaps[gaps.length - 1]).toBeCloseTo(0.25, 10);
-    expect(gaps.some((g) => Math.abs(g - 0.25) < 1e-9)).toBe(true);
-    expect(gaps.every((g) => g <= 0.25 + 1e-9)).toBe(true);
+    for (let i = 1; i < after.length; i++) {
+      expect(after[i].time - after[i - 1].time).toBeCloseTo(0.25, 10);
+    }
   });
 
   it("resyncs instead of bursting", () => {
