@@ -34,7 +34,20 @@ describe("level data", () => {
   });
   it("tool shorthands", () => {
     expect(DRUM_TOOLS).toEqual(["kick", "snare", "hat", "perc", "sliders"]);
-    expect(ALL_TOOLS).toHaveLength(21);
+    expect(ALL_TOOLS).toEqual([
+      "tempo", "key", "undo", "share", "wav", "kick", "snare", "hat", "perc", "shift", "sliders", "kit",
+      "instruments", "mixer", "chords", "suggest", "maj7", "rhythm", "bass", "melody", "melodyTools",
+    ]);
+    expect(Object.isFrozen(ALL_TOOLS)).toBe(true);
+    expect(Object.isFrozen(DRUM_TOOLS)).toBe(true);
+  });
+  it("hints use the chord names the learner sees", () => {
+    expect(lv(8).goals.map((g) => g.hint)).toEqual(["Make the first bar Am or Em.", "Put Cmaj7 or Fmaj7 in any bar."]);
+    expect(lv(9).goals[0].hint).toBe("Use Am or Em in at least 2 bars.");
+    expect(lv(2).goals[0].hint).toContain("clap dot");
+  });
+  it("3 starts with the default 8-hit hat", () => {
+    expect(start(lv(3)).drums.rings.hat.hits).toBe(8);
   });
   it("level 6 has a quiz and compare; unlocks exact", () => {
     expect(lv(6).quiz).toEqual({ answer: 1 });

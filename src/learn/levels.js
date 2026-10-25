@@ -4,11 +4,11 @@ import { createDefaultSong } from "../song/model.js";
 
 export const WORLDS = ["Rhythm", "Chords & feelings", "Bass", "Melody", "Sound & final track"];
 
-export const DRUM_TOOLS = ["kick", "snare", "hat", "perc", "sliders"];
-export const ALL_TOOLS = [
+export const DRUM_TOOLS = Object.freeze(["kick", "snare", "hat", "perc", "sliders"]);
+export const ALL_TOOLS = Object.freeze([
   "tempo", "key", "undo", "share", "wav", "kick", "snare", "hat", "perc", "shift", "sliders", "kit",
   "instruments", "mixer", "chords", "suggest", "maj7", "rhythm", "bass", "melody", "melodyTools",
-];
+]);
 
 // Recursively freeze: applyPatch aliases patch arrays into songs by reference.
 function deepFreeze(o) {
@@ -85,8 +85,8 @@ export const LEVELS = deepFreeze([
     startPatch: KICK_ONLY,
     tools: ["kick", "snare"],
     goals: [
-      { text: "Clap at 3 o'clock", hint: "Tap the snare dot at 3 o'clock.", check: ({ song }) => song.drums.rings.snare.pattern[4] === true },
-      { text: "Clap at 9 o'clock", hint: "Tap the snare dot at 9 o'clock.", check: ({ song }) => song.drums.rings.snare.pattern[12] === true },
+      { text: "Clap at 3 o'clock", hint: "Tap the clap dot at 3 o'clock.", check: ({ song }) => song.drums.rings.snare.pattern[4] === true },
+      { text: "Clap at 9 o'clock", hint: "Tap the clap dot at 9 o'clock.", check: ({ song }) => song.drums.rings.snare.pattern[12] === true },
     ],
     // Bonus counts pattern trues (not the `hits` field) because dots are tapped by hand here.
     bonus: { text: "Add a 3rd clap anywhere", check: ({ song }) => count(song.drums.rings.snare.pattern) >= 3 },
@@ -95,7 +95,7 @@ export const LEVELS = deepFreeze([
   {
     id: 3, world: 1, title: "Tick-tock",
     coach: ["Hi-hats are fast little ticks. They add energy.", "Make them calm, then busy."],
-    startPatch: { drums: { rings: { kick: ring(def.drums.rings.kick), snare: ring(def.drums.rings.snare) } } },
+    startPatch: DEFAULT_DRUMS,
     tools: ["kick", "snare", "hat", "sliders"],
     goals: [
       { text: "Calm: 4 hits or fewer", hint: "Slide the hat's hits down to 4 or fewer.", check: (ctx) => hatHits(ctx).some((n) => n <= 4) },
@@ -175,8 +175,8 @@ export const LEVELS = deepFreeze([
     startPatch: DEFAULT_DRUMS,
     tools: ["chords", "suggest", "maj7", "rhythm"],
     goals: [
-      { text: "Start sad", hint: "Make the first bar a sad chord, vi or iii.", check: (c) => SAD.includes(prog(c)[0]) },
-      { text: "Use a dreamy chord", hint: "Put Imaj7 or IVmaj7 in any bar.", check: (c) => prog(c).some((d) => d === "Imaj7" || d === "IVmaj7") },
+      { text: "Start sad", hint: "Make the first bar Am or Em.", check: (c) => SAD.includes(prog(c)[0]) },
+      { text: "Use a dreamy chord", hint: "Put Cmaj7 or Fmaj7 in any bar.", check: (c) => prog(c).some((d) => d === "Imaj7" || d === "IVmaj7") },
     ],
     bonus: { text: "Change the chord rhythm", check: ({ song }) => song.chords.rhythm !== "hold" },
     unlocks: ["maj7", "rhythm"],
@@ -186,7 +186,7 @@ export const LEVELS = deepFreeze([
     coach: ["Boss level! Make music for a rainy day."],
     startPatch: DEFAULT_DRUMS,
     tools: ["chords", "suggest", "maj7", "rhythm", "instruments", ...DRUM_TOOLS],
-    goals: [{ text: "At least 2 sad chords", hint: "Use vi or iii in at least 2 bars.", check: (c) => prog(c).filter((d) => SAD.includes(d)).length >= 2 }],
+    goals: [{ text: "At least 2 sad chords", hint: "Use Am or Em in at least 2 bars.", check: (c) => prog(c).filter((d) => SAD.includes(d)).length >= 2 }],
     bonus: { text: "Sounds rainy to me ✓", self: true },
     unlocks: ["chord-instruments:5"],
   },

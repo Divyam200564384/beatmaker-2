@@ -11,7 +11,13 @@ describe("progress", () => {
     expect(loadProgress()).toEqual({ stars: {}, current: 1 });
     localStorage.setItem("bm2.progress", "{not json");
     expect(loadProgress()).toEqual({ stars: {}, current: 1 });
-    localStorage.setItem("bm2.progress", JSON.stringify({ stars: "x", current: 99 }));
+  });
+  it("defaults on bad stars", () => {
+    localStorage.setItem("bm2.progress", JSON.stringify({ stars: "x", current: 3 }));
+    expect(loadProgress()).toEqual({ stars: {}, current: 1 });
+  });
+  it("defaults on bad current", () => {
+    localStorage.setItem("bm2.progress", JSON.stringify({ stars: { 1: 2 }, current: 99 }));
     expect(loadProgress()).toEqual({ stars: {}, current: 1 });
   });
   it("round-trips", () => {
@@ -41,6 +47,7 @@ describe("progress", () => {
       "electric_piano_1", "acoustic_grand_piano", "pad_2_warm", "string_ensemble_1", "acoustic_guitar_nylon",
     ]);
     expect(allowedItems(done(13)).instruments).toEqual(INSTRUMENTS.map((i) => i.id));
+    expect(allowedItems(done(12)).instruments).toEqual(expect.arrayContaining(["music_box", "lead_1_square"]));
     expect(allowedItems(done(12)).instruments.length).toBeLessThan(INSTRUMENTS.length);
   });
   it("zero-star levels do not count as completed", () => {

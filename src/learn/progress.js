@@ -42,7 +42,7 @@ export function allowedItems(p) {
   // Brief only defines "all after level 13"; before that, offer the chord picks plus the default bass and melody voices.
   const instruments = done(13)
     ? INSTRUMENTS.map((i) => i.id)
-    : [...CHORD_INSTRUMENTS, "electric_bass_finger", "marimba"];
+    : [...CHORD_INSTRUMENTS, "electric_bass_finger", "marimba", "music_box", "lead_1_square"];
   return { kits, chordInstruments, instruments };
 }
 
