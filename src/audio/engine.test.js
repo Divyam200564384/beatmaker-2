@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createDefaultSong, setInstrument, setMelodyCell, setMix, setPerc } from "../song/model.js";
+import { createDefaultSong, setInstrument, setKit, setMelodyCell, setMix, setPerc, setTempo } from "../song/model.js";
 
 const h = vi.hoisted(() => {
   const state = { created: [], auto: true, failNext: [], clock: null, contexts: [] };
@@ -218,7 +218,7 @@ describe("engine", () => {
     engine.setSong(setInstrument(song, "melody", "flute"));
     await flush();
     await flush();
-    expect(onStatus).toHaveBeenCalledWith({ layer: "melody", state: "error", message: "404" });
+    expect(onStatus).toHaveBeenCalledWith({ layer: "melody", state: "error", message: "404", id: "flute" });
     h.state.clock.args.onStep(0, 1);
     expect(old.start).toHaveBeenCalledTimes(1);
   });
@@ -231,7 +231,7 @@ describe("engine", () => {
     engine.setSong(song);
     await flush();
     await flush();
-    expect(onStatus).toHaveBeenCalledWith({ layer: "melody", state: "error", message: "404" });
+    expect(onStatus).toHaveBeenCalledWith({ layer: "melody", state: "error", message: "404", id: "flute" });
     onStatus.mockClear();
     await engine.retry("melody");
     expect(onStatus).toHaveBeenCalledWith({ layer: "melody", state: "ready" });
@@ -355,5 +355,30 @@ describe("loadInstrument", () => {
     expect(Soundfont.mock.calls[0][1].kit).toBe("MusyngKite");
     expect(Soundfont.mock.calls[1][1].kit).toBe("FluidR3_GM");
     expect(inst).toBe(h.state.created[1]);
+  });
+});
+
+describe("engine ring samples", () => {
+  it("reports which sample each ring uses once the kit loads, and again on perc or kit change", async () => {
+    const onRings = vi.fn();
+    const engine = createEngine({ onStep, onStatus, onRings });
+    const song = createDefaultSong();
+    await engine.start(song);
+    expect(onRings).toHaveBeenLastCalledWith({
+      kick: { name: "kick", exact: true },
+      snare: { name: "snare", exact: true },
+      hat: { name: "hihat-close", exact: true },
+      perc: { name: "hihat-open", exact: true },
+    });
+    const calls = onRings.mock.calls.length;
+    engine.setSong(setTempo(song, 100));
+    expect(onRings).toHaveBeenCalledTimes(calls); // same kit and perc: no new report
+    engine.setSong(setPerc(song, "cowbell"));
+    expect(onRings.mock.calls.at(-1)[0].perc).toEqual({ name: "cowbell", exact: true });
+    // Sonic Pi has no rim sample: the closest (snare) is used and marked as not exact.
+    engine.setSong(setPerc(setKit(song, "Sonic-Pi"), "rim"));
+    await flush();
+    await flush();
+    expect(onRings.mock.calls.at(-1)[0].perc).toEqual({ name: "snare", exact: false });
   });
 });

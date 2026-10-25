@@ -10,6 +10,9 @@ export function effectiveGains(song) {
   return gains;
 }
 
+// The shared reverb bypasses the layer gain nodes, so the send carries mute/solo/volume itself.
+export const sendFor = (song, layer) => (song[layer].mix.space / 100) * effectiveGains(song)[layer];
+
 export function createMixer(ctx) {
   const master = ctx.createGain();
   const compressor = ctx.createDynamicsCompressor();
@@ -25,10 +28,13 @@ export function createMixer(ctx) {
   return {
     output: master,
     input: (layer) => layerGains[layer],
-    apply(song) {
+    // Live changes glide; `instant` (offline render) sets the gains before any note plays.
+    apply(song, { instant = false } = {}) {
       const gains = effectiveGains(song);
       for (const l of LAYERS) {
-        layerGains[l].gain.setTargetAtTime(gains[l], ctx.currentTime, 0.02);
+        const p = layerGains[l].gain;
+        if (instant) p.setValueAtTime(gains[l], ctx.currentTime);
+        else p.setTargetAtTime(gains[l], ctx.currentTime, 0.02);
       }
     },
   };

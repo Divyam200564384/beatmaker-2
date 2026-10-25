@@ -78,4 +78,10 @@ describe('RhythmRings', () => {
     fireEvent.change(screen.getByLabelText(/percussion sound/i), { target: { value: 'tom' } })
     expect(p.commit.mock.calls[0][0](p.song).drums.perc).toBe('tom')
   })
+
+  it('labels the snare ring "Snare / clap" (level 2 talks about the clap)', () => {
+    setup()
+    expect(screen.getByText('Snare / clap')).toBeInTheDocument()
+    expect(screen.getByLabelText('Snare hits')).toBeInTheDocument()
+  })
 })

@@ -5,7 +5,8 @@ import './RhythmRings.css'
 
 const RINGS = [
   { id: 'kick', name: 'Kick', color: '#e4572e', r: 92 },
-  { id: 'snare', name: 'Snare', color: '#f28b30', r: 72 },
+  // The visible label also says clap: Learn level 2 calls this ring the clap. Control names keep 'Snare'.
+  { id: 'snare', name: 'Snare', label: 'Snare / clap', color: '#f28b30', r: 72 },
   { id: 'hat', name: 'Hat', color: '#d4a400', r: 52 },
   { id: 'perc', name: 'Perc', color: '#0ea5a4', r: 32 },
 ]
@@ -84,7 +85,7 @@ export default function RhythmRings({ song, commit, preview, onSound, step = nul
           const sample = ringSamples?.[ring.id]
           return (
             <section key={ring.id} className="rings-ctl" style={{ '--c': ring.color }}>
-              <b>{ring.name}</b>
+              <b>{ring.label ?? ring.name}</b>
               {sample && (
                 <span className="rings-sample">
                   {sample.exact ? sample.name : `${sample.name} (closest sound)`}

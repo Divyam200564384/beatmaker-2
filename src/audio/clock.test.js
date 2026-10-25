@@ -103,4 +103,12 @@ describe("clock", () => {
     expect(calls[0].step).toBe(0);
     expect(calls[0].time).toBeCloseTo(ctx.currentTime - 0.1 + 0.06, 10);
   });
+  it("a non-finite tempo cannot freeze the tick loop", () => {
+    bpm = NaN;
+    clock.start();
+    advance(0.5);
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls.length).toBeLessThan(20);
+    expect(calls.every((c) => Number.isFinite(c.time))).toBe(true);
+  });
 });

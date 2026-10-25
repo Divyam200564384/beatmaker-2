@@ -2,18 +2,17 @@ import { Reverb } from "smplr";
 import { LAYERS } from "../song/model.js";
 import { notesAt } from "../music/arrange.js";
 import { createClock } from "./clock.js";
-import { createMixer, effectiveGains } from "./mixer.js";
-import { loadInstrument, loadKit, ringSampleMap } from "./loaders.js";
+import { createMixer, sendFor } from "./mixer.js";
+import { loadInstrument, loadKit, ringSampleInfo } from "./loaders.js";
 
 // Replaced instruments keep sounding their scheduled tails before disposal.
 const DISPOSE_DELAY_MS = 4000;
 const PREVIEW_SEC = 0.6;
 
 const idFor = (song, layer) => (layer === "drums" ? song.drums.kit : song[layer].instrument);
-// The shared reverb bypasses the layer gain nodes, so the send carries mute/solo/volume itself.
-const sendFor = (song, layer) => (song[layer].mix.space / 100) * effectiveGains(song)[layer];
 
-export function createEngine({ onStep = () => {}, onStatus = () => {} } = {}) {
+// onRings({ kick: { name, exact }, ... }) reports the kit sample behind each ring whenever it changes.
+export function createEngine({ onStep = () => {}, onStatus = () => {}, onRings = () => {} } = {}) {
   let ctx = null;
   let mixer = null;
   let reverb = null;
@@ -44,7 +43,9 @@ export function createEngine({ onStep = () => {}, onStatus = () => {} } = {}) {
     const key = `${kit.id}|${song.drums.perc}`;
     if (key === ringKey) return;
     ringKey = key;
-    ringMap = ringSampleMap(kit.groups, song.drums.perc);
+    const info = ringSampleInfo(kit.groups, song.drums.perc);
+    ringMap = Object.fromEntries(Object.entries(info).map(([ring, s]) => [ring, s.name]));
+    onRings(info);
   }
 
   function scheduleStep(step, time) {
@@ -82,7 +83,7 @@ export function createEngine({ onStep = () => {}, onStatus = () => {} } = {}) {
         ? await loadKit(ctx, id, { destination, onProgress })
         : { inst: await loadInstrument(ctx, id, { destination, onProgress }), groups: [] };
     } catch (e) {
-      if (current()) onStatus({ layer, state: "error", message: e?.message ?? String(e) });
+      if (current()) onStatus({ layer, state: "error", message: e?.message ?? String(e), id });
       return;
     }
     if (!current()) {

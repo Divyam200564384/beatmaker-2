@@ -4,6 +4,10 @@ const HORIZON = 0.12;
 const START_DELAY = 0.06;
 const RESYNC_LATE = 0.1;
 const RESYNC_AHEAD = 0.05;
+const FALLBACK_BPM = 96;
+
+// A NaN/zero tempo would make every step time NaN and spin the tick loop forever.
+const safeBpm = (bpm) => (Number.isFinite(bpm) && bpm > 0 ? bpm : FALLBACK_BPM);
 
 export function createClock({ context, getBpm, onStep }) {
   let timer = null;
@@ -14,7 +18,7 @@ export function createClock({ context, getBpm, onStep }) {
   function tick() {
     for (;;) {
       // Next step's time is computed lazily so tempo changes apply at once.
-      let t = lastTime === null ? pendingTime : lastTime + 60 / getBpm() / 4;
+      let t = lastTime === null ? pendingTime : lastTime + 60 / safeBpm(getBpm()) / 4;
       if (t < context.currentTime - RESYNC_LATE) {
         t = context.currentTime + RESYNC_AHEAD;
       }

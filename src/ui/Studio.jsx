@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types -- composed screen; props documented in the Task 11 brief */
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import PlayBar from './PlayBar.jsx'
 import LayerHeader from './LayerHeader.jsx'
 import RhythmRings from './RhythmRings.jsx'
@@ -7,6 +7,8 @@ import ChordPanel from './ChordPanel.jsx'
 import BassPanel from './BassPanel.jsx'
 import MelodyGrid from './MelodyGrid.jsx'
 import { useMediaQuery } from '../hooks/useMediaQuery.js'
+import { soundLabel } from '../audio/catalog.js'
+import { encodeSong } from '../song/codec.js'
 import './Studio.css'
 
 const LAYERS = [
@@ -16,10 +18,13 @@ const LAYERS = [
   { id: 'melody', title: 'Melody', icon: '🎤', tools: ['melody', 'melodyTools'] },
 ]
 
-function engineStatusText(status = {}) {
+// The sound a status refers to: the id that failed, else the song's current one for that layer.
+const statusLabel = (s, song) => soundLabel(s.layer, s.id ?? (s.layer === 'drums' ? song.drums.kit : song[s.layer].instrument))
+
+function engineStatusText(status = {}, song) {
   const entries = Object.values(status)
   const failed = entries.find((s) => s.state === 'error')
-  if (failed) return `Couldn't load ${failed.layer}`
+  if (failed) return `Couldn't load ${statusLabel(failed, song)}.`
   const loading = entries.filter((s) => s.state === 'loading')
   if (loading.length) {
     const pct = Math.round((loading.reduce((a, s) => a + (s.progress ?? 0), 0) / loading.length) * 100)
@@ -39,6 +44,8 @@ export default function Studio({
   onAction, ringHint = null, shareUrl,
 }) {
   const wide = useMediaQuery('(min-width: 900px)')
+  // Built from the song itself: the URL hash is written after a short delay and may lag behind.
+  const ownShareUrl = useMemo(() => `${location.origin}${location.pathname}${location.search}#${encodeSong(song)}`, [song])
   const [tab, setTab] = useState('drums')
   const tabRefs = useRef({})
   const layers = LAYERS.filter((l) => tools === null || l.tools.some((t) => tools.has(t)))
@@ -66,7 +73,7 @@ export default function Studio({
 
   const panel = (l) => {
     let body = null
-    if (l.id === 'drums') body = <RhythmRings song={song} commit={commit} preview={preview} onSound={onSound} step={step} tools={tools} hint={ringHint} onAction={onAction} />
+    if (l.id === 'drums') body = <RhythmRings song={song} commit={commit} preview={preview} onSound={onSound} step={step} tools={tools} hint={ringHint} ringSamples={engine.ringSamples} onAction={onAction} />
     else if (l.id === 'chords') body = <ChordPanel song={song} commit={commit} onSound={onSound} step={step} tools={tools} />
     else if (l.id === 'bass') body = <BassPanel song={song} commit={commit} onAction={onAction} />
     else body = <MelodyGrid song={song} commit={commit} preview={preview} onSound={onSound} step={step} tools={tools} />
@@ -92,8 +99,9 @@ export default function Studio({
         song={song} commit={commit} preview={preview}
         playing={engine.playing} onToggle={engine.toggle}
         onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo}
-        onMenu={onMenu} menuOpen={menuOpen} statusText={engineStatusText(engine.status) || statusText || readyText(engine.status)} tools={tools}
-        onShare={() => onAction?.('share')} onWav={() => onAction?.('wav')} shareUrl={shareUrl}
+        onMenu={onMenu} menuOpen={menuOpen} statusText={engineStatusText(engine.status, song) || statusText || readyText(engine.status)} tools={tools}
+        onShare={() => onAction?.('share')} onWav={() => onAction?.('wav')}
+        shareUrl={shareUrl ?? ownShareUrl}
       />
       {hints.map((h) => <p key={h} className="studio-hint" role="note">{h}</p>)}
       <main className={`studio${wide ? ' studio-grid' : ''}${tabbed ? ' studio-tabbed' : ''}`}>

@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types -- shared header; props documented in the Task 9 brief */
-import { CATEGORIES, INSTRUMENTS, KITS } from '../audio/catalog.js'
+import { CATEGORIES, INSTRUMENTS, KITS, soundLabel } from '../audio/catalog.js'
 import { setInstrument, setKit, setMix } from '../song/model.js'
 import RangeSlider from './RangeSlider.jsx'
 import './LayerHeader.css'
@@ -65,7 +65,7 @@ export default function LayerHeader({ layer, title, icon, song, commit, preview,
       )}
       {status?.state === 'error' && (
         <span className="layer-header-status layer-header-error" role="alert">
-          {status.message || 'Could not load sounds'}
+          {`Couldn't load ${soundLabel(layer, status.id ?? current)}. `}
           <button type="button" className="layer-header-btn" onClick={onRetry}>Retry</button>
         </span>
       )}

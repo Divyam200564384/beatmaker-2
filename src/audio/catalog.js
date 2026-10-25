@@ -127,3 +127,9 @@ export function pickRingSample(groupNames, want) {
   }
   return { name: groupNames[0], exact: false };
 }
+
+// The name the user sees for a layer's sound: the kit label for drums, the instrument label otherwise.
+export function soundLabel(layer, id) {
+  const list = layer === "drums" ? KITS : INSTRUMENTS;
+  return list.find((x) => x.id === id)?.label ?? id;
+}

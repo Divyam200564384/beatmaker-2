@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { effectiveGains, createMixer } from "./mixer.js";
+import { effectiveGains, createMixer, sendFor } from "./mixer.js";
 import { LAYERS } from "../song/model.js";
 
 function song(mixes = {}) {
@@ -33,7 +33,7 @@ describe("effectiveGains", () => {
 });
 
 function fakeCtx() {
-  const node = () => ({ connect: vi.fn(), gain: { value: 1, setTargetAtTime: vi.fn() } });
+  const node = () => ({ connect: vi.fn(), gain: { value: 1, setTargetAtTime: vi.fn(), setValueAtTime: vi.fn() } });
   const ctx = {
     currentTime: 1.5,
     destination: { id: "dest" },
@@ -61,5 +61,19 @@ describe("createMixer", () => {
     expect(mixer.input("drums").gain.setTargetAtTime).toHaveBeenCalledWith(0.5, 1.5, 0.02);
     expect(mixer.input("bass").gain.setTargetAtTime).toHaveBeenCalledWith(0, 1.5, 0.02);
     expect(mixer.input("chords").gain.setTargetAtTime).toHaveBeenCalledWith(1, 1.5, 0.02);
+  });
+});
+
+describe("instant apply and sendFor", () => {
+  it("apply with instant sets each gain at once (offline render)", () => {
+    const ctx = fakeCtx();
+    const mixer = createMixer(ctx);
+    mixer.apply(song({ drums: { volume: 50 } }), { instant: true });
+    expect(mixer.input("drums").gain.setValueAtTime).toHaveBeenCalledWith(0.5, 1.5);
+    expect(mixer.input("drums").gain.setTargetAtTime).not.toHaveBeenCalled();
+  });
+  it("sendFor scales space by the layer's effective gain", () => {
+    expect(sendFor(song({ bass: { space: 50, volume: 80 } }), "bass")).toBeCloseTo(0.4, 10);
+    expect(sendFor(song({ bass: { space: 50, mute: true } }), "bass")).toBe(0);
   });
 });

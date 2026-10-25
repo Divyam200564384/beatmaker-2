@@ -1,7 +1,7 @@
 import { renderOffline, Reverb } from "smplr";
 import { LAYERS } from "../song/model.js";
 import { notesAt } from "../music/arrange.js";
-import { effectiveGains } from "./mixer.js";
+import { createMixer, sendFor } from "./mixer.js";
 import { loadInstrument, loadKit, ringSampleMap } from "./loaders.js";
 
 const LOOPS = 2;
@@ -13,27 +13,26 @@ export async function renderSongWav(song) {
   const loopSec = STEPS * stepDur;
   const result = await renderOffline(
     async (ctx) => {
-      const destination = ctx.destination;
+      // Same graph as live playback: instrument -> layer gain -> master -> compressor, reverb -> master.
+      const mixer = createMixer(ctx);
+      mixer.apply(song, { instant: true });
       let reverb = null;
       try {
         reverb = Reverb(ctx);
-        reverb.connect(destination);
+        reverb.connect(mixer.output);
         await reverb.ready();
       } catch {
         reverb = null; // Render dry rather than fail when the reverb can't run offline.
       }
       const [kit, chords, bass, melody] = await Promise.all([
-        loadKit(ctx, song.drums.kit, { destination }),
-        loadInstrument(ctx, song.chords.instrument, { destination }),
-        loadInstrument(ctx, song.bass.instrument, { destination }),
-        loadInstrument(ctx, song.melody.instrument, { destination }),
+        loadKit(ctx, song.drums.kit, { destination: mixer.input("drums") }),
+        loadInstrument(ctx, song.chords.instrument, { destination: mixer.input("chords") }),
+        loadInstrument(ctx, song.bass.instrument, { destination: mixer.input("bass") }),
+        loadInstrument(ctx, song.melody.instrument, { destination: mixer.input("melody") }),
       ]);
       const insts = { drums: kit.inst, chords, bass, melody };
-      const gains = effectiveGains(song);
-      for (const l of LAYERS) {
-        insts[l].output.volume = gains[l] * 127;
-        if (reverb) insts[l].output.addEffect("reverb", reverb, song[l].mix.space / 100);
-      }
+      // Instrument volume stays at smplr's default, as live; the layer gains do the mixing.
+      if (reverb) for (const l of LAYERS) insts[l].output.addEffect("reverb", reverb, sendFor(song, l));
       const rings = ringSampleMap(kit.groups, song.drums.perc);
       for (let step = 0; step < LOOPS * STEPS; step++) {
         const t = step * stepDur;

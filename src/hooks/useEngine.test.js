@@ -66,3 +66,15 @@ describe('useEngine retry', () => {
     expect(engine.retry).toHaveBeenCalledWith('bass')
   })
 })
+
+describe('useEngine ring samples', () => {
+  it('exposes the ring sample map the engine reports', async () => {
+    const { result } = renderHook(() => useEngine(createDefaultSong()))
+    expect(result.current.ringSamples).toBe(null)
+    await act(async () => { await result.current.toggle() })
+    const { onRings } = createEngine.mock.calls[0][0]
+    const map = { kick: { name: 'kick', exact: true }, snare: { name: 'clap', exact: false }, hat: { name: 'hh', exact: true }, perc: { name: 'oh', exact: true } }
+    act(() => onRings(map))
+    expect(result.current.ringSamples).toEqual(map)
+  })
+})

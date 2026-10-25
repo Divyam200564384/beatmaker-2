@@ -10,6 +10,8 @@ export function useEngine(song) {
   const [playing, setPlaying] = useState(false)
   const [step, setStep] = useState(-1)
   const [status, setStatus] = useState({})
+  // Which kit sample each drum ring plays, so the rings can name a closest-sound fallback.
+  const [ringSamples, setRingSamples] = useState(null)
 
   // Created lazily: engine.start/preview are what create the AudioContext, on a user gesture.
   const get = useCallback(() => {
@@ -17,6 +19,7 @@ export function useEngine(song) {
       engineRef.current = createEngine({
         onStep: setStep,
         onStatus: (s) => setStatus((prev) => ({ ...prev, [s.layer]: s })),
+        onRings: setRingSamples,
       })
       engineRef.current.setSong(current())
     }
@@ -62,5 +65,5 @@ export function useEngine(song) {
     setStep(-1)
   }, [])
 
-  return { playing, toggle, step, status, preview, retry, setSource, stop }
+  return { playing, toggle, step, status, ringSamples, preview, retry, setSource, stop }
 }

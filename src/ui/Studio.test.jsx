@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, act, within, waitFor } from '@testing-library/react'
 import Studio from './Studio.jsx'
-import { createDefaultSong } from '../song/model.js'
+import { createDefaultSong, setTempo } from '../song/model.js'
+import { encodeSong } from '../song/codec.js'
 
 const engine = { playing: false, toggle: vi.fn(), step: -1, status: {}, preview: vi.fn() }
 const base = () => ({ song: createDefaultSong(), commit: vi.fn(), preview: vi.fn(), engine })
@@ -77,7 +78,7 @@ describe('Studio', () => {
 
   it('Retry calls the engine retry for that layer', () => {
     const retry = vi.fn()
-    const eng = { ...engine, retry, status: { bass: { layer: 'bass', state: 'error', message: 'x' } } }
+    const eng = { ...engine, retry, status: { bass: { layer: 'bass', state: 'error', message: 'x', id: 'electric_bass_finger' } } }
     render(<Studio {...base()} engine={eng} />)
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
     expect(retry).toHaveBeenCalledWith('bass')
@@ -155,3 +156,44 @@ describe('Studio', () => {
     expect(screen.getByLabelText('Drum kit').querySelectorAll('option')).toHaveLength(1)
   })
 })
+
+describe('Studio ring samples and load errors', () => {
+  it('passes the engine ring samples to the rings, naming a closest sound', () => {
+    const ringSamples = {
+      kick: { name: 'kick', exact: true }, snare: { name: 'clap', exact: false },
+      hat: { name: 'hihat-close', exact: true }, perc: { name: 'hihat-open', exact: true },
+    }
+    render(<Studio {...base()} engine={{ ...engine, ringSamples }} />)
+    expect(screen.getByText('clap (closest sound)')).toBeInTheDocument()
+    expect(screen.getByText('hihat-close')).toBeInTheDocument()
+  })
+
+  it('names the failed instrument by its label in the panel and the play bar', () => {
+    const eng = { ...engine, retry: vi.fn(), status: { chords: { layer: 'chords', state: 'error', message: 'HTTP 404', id: 'electric_piano_1' } } }
+    render(<Studio {...base()} engine={eng} />)
+    const chords = screen.getByRole('heading', { name: 'Chords' }).closest('header')
+    expect(within(chords).getByRole('alert')).toHaveTextContent("Couldn't load Electric piano 1. Retry")
+    expect(screen.queryByText(/HTTP 404/)).toBeNull()
+    expect(screen.getAllByRole('status').some((e) => e.textContent === "Couldn't load Electric piano 1.")).toBe(true)
+  })
+
+  it('names a failed kit by its label', () => {
+    const eng = { ...engine, retry: vi.fn(), status: { drums: { layer: 'drums', state: 'error', message: 'x', id: 'LM-2' } } }
+    render(<Studio {...base()} engine={eng} />)
+    expect(screen.getAllByText(/Couldn't load LinnDrum LM-2[.]/).length).toBeGreaterThan(0)
+  })
+})
+
+describe('Studio share link', () => {
+  it('Share copies a link for the current song even before the debounced hash write', async () => {
+    const writeText = vi.fn().mockResolvedValue()
+    Object.assign(navigator, { clipboard: { writeText } })
+    history.replaceState(null, '', '/app/#stale')
+    const song = setTempo(createDefaultSong(), 133)
+    render(<Studio {...base()} song={song} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalled())
+    expect(writeText).toHaveBeenCalledWith(`${location.origin}/app/#${encodeSong(song)}`)
+  })
+})
+

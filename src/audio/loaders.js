@@ -39,12 +39,18 @@ export async function loadKit(ctx, kitId, { destination, onProgress } = {}) {
   return { inst, groups };
 }
 
-// Maps the arrangement's drum rings to the kit's sample groups.
-export function ringSampleMap(groups, perc) {
+// Which kit sample each drum ring plays: { kick: { name, exact }, ... }; exact is false for a closest-sound fallback.
+export function ringSampleInfo(groups, perc) {
   return {
-    kick: pickRingSample(groups, "kick").name,
-    snare: pickRingSample(groups, "snare").name,
-    hat: pickRingSample(groups, "hat").name,
-    perc: pickRingSample(groups, perc).name,
+    kick: pickRingSample(groups, "kick"),
+    snare: pickRingSample(groups, "snare"),
+    hat: pickRingSample(groups, "hat"),
+    perc: pickRingSample(groups, perc),
   };
+}
+
+// Maps the arrangement's drum rings to the kit's sample group names.
+export function ringSampleMap(groups, perc) {
+  const info = ringSampleInfo(groups, perc);
+  return Object.fromEntries(Object.entries(info).map(([ring, s]) => [ring, s.name]));
 }
