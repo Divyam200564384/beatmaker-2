@@ -62,3 +62,14 @@
 }
 .menu-item { min-height: 44px; padding: 0 1rem; border: 0; border-radius: 10px; background: transparent; font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
 .menu-item:hover { background: var(--page); }
+
+/* Earned by finishing level 15; shown on Home and the level map. */
+.graduate-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border: 2px solid var(--gold);
+  border-radius: 999px;
+  background: #fff7d6;
+  color: var(--ink);
+  font-weight: 700;
+}

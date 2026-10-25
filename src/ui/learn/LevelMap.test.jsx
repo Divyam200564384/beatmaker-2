@@ -36,4 +36,12 @@ describe('LevelMap', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back' }))
     expect(onBack).toHaveBeenCalled()
   })
+
+  it('shows the Graduate badge once level 15 has stars', () => {
+    const { rerender } = render(<LevelMap progress={progress} onOpen={vi.fn()} />)
+    expect(screen.queryByText('🎓 Graduate')).toBeNull()
+    rerender(<LevelMap progress={{ stars: { ...progress.stars, 15: 1 }, current: 15 }} onOpen={vi.fn()} />)
+    expect(screen.getByText('🎓 Graduate')).toBeInTheDocument()
+  })
 })
+

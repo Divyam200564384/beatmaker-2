@@ -51,10 +51,11 @@ function useHints(playing) {
 }
 
 export default function App() {
-  const { song, commit, preview, undo, redo, canUndo, canRedo, loadError } = useSong()
+  const { song, commit, preview, undo, redo, canUndo, canRedo, loadError, notice, openedLink } = useSong()
   const engine = useEngine(song)
   const hints = useHints(engine.playing)
-  const [screen, setScreen] = useState(() => (location.hash.length > 1 ? 'studio' : 'home'))
+  // Only a song link (not the autosave echoed back into the URL on reload) skips Home.
+  const [screen, setScreen] = useState(() => (openedLink ? 'studio' : 'home'))
   const [progress, setProgress] = useState(loadProgress)
   const [lessonId, setLessonId] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -96,6 +97,7 @@ export default function App() {
       <Home
         onLearn={() => setScreen('learn-map')}
         learnLabel={Object.keys(progress.stars).length ? `Continue · Level ${progress.current}` : 'Start'}
+        graduate={(progress.stars[15] ?? 0) > 0}
         onStudio={() => setScreen('studio')}
         onCredits={() => setScreen('credits')}
       />
@@ -107,7 +109,7 @@ export default function App() {
         song={song} commit={commit} preview={preview} engine={engine}
         undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}
         onMenu={() => setMenuOpen((o) => !o)} menuOpen={menuOpen}
-        statusText={showLoadError ? loadError || '' : ''} hints={hints}
+        statusText={showLoadError ? loadError || notice || '' : ''} hints={hints}
       />
       {menuOpen && (
         <Menu

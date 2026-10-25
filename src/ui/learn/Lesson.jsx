@@ -8,7 +8,7 @@ import { applyPatch, createEmptySong } from '../../song/model.js'
 import { encodeSong } from '../../song/codec.js'
 import { allowedItems, starsFor, CHORD_INSTRUMENTS } from '../../learn/progress.js'
 import { KITS, INSTRUMENTS } from '../../audio/catalog.js'
-import { WORLDS } from '../../learn/levels.js'
+import { WORLDS, goalMet } from '../../learn/levels.js'
 import './Learn.css'
 
 const union = (a, b) => [...new Set([...a, ...b])]
@@ -35,7 +35,7 @@ const QUIZ_LETTERS = 'ABCD'
 
 export default function Lesson({ level, progress, onDone, onExit, engine }) {
   const [startSong] = useState(() => applyPatch(createEmptySong(), level.startPatch))
-  const { song, commit: rawCommit, preview: rawPreview, undo: rawUndo, redo: rawRedo, canUndo, canRedo } = useSong({ initial: startSong, persist: false })
+  const { song, commit: rawCommit, preview: rawPreview, undo: rawUndo, redo: rawRedo, canUndo, canRedo, previewing } = useSong({ initial: startSong, persist: false })
   const [actions, setActions] = useState([])
   const [revealed, setRevealed] = useState([])
   const [usedHint, setUsedHint] = useState(false)
@@ -52,15 +52,17 @@ export default function Lesson({ level, progress, onDone, onExit, engine }) {
 
   // Goals are checked on every song or action change.
   const ctx = { song, actions }
-  const met = level.goals.map((g) => g.check(ctx))
-  const allMet = met.every(Boolean)
-  const bonusNow = level.bonus ? (level.bonus.self ? actions.includes('self-check') : level.bonus.check(ctx)) : false
+  const met = level.goals.map((g) => goalMet(g, ctx))
+  // Mid-drag songs are only previews: they show live ticks but never complete the level or earn the bonus.
+  const allMet = met.every(Boolean) && !previewing
+  const bonusNow = !previewing && (level.bonus ? (level.bonus.self ? actions.includes('self-check') : level.bonus.check(ctx)) : false)
 
   // Once reached, completion and the bonus stay earned even if the song changes afterwards.
   useEffect(() => { if (allMet) setCompleted(true) }, [allMet])
   useEffect(() => { if (bonusNow) setBonusSeen(true) }, [bonusNow])
   const done = completed || allMet
   const bonusMet = bonusSeen || bonusNow
+  const feelingGoals = level.goals.some((g) => g.feeling)
   // Stars recorded at completion never drop; a later bonus can still raise them (Hint is off once done).
   const liveStars = starsFor({ goalsMet: done, usedHint, bonusMet })
   useEffect(() => { if (done) setRecordedStars((r) => Math.max(r, liveStars)) }, [done, liveStars])
@@ -172,12 +174,14 @@ export default function Lesson({ level, progress, onDone, onExit, engine }) {
 
       <Goals
         goals={level.goals} met={met} revealed={revealed} bonus={level.bonus} bonusMet={bonusMet}
-        selfChecked={actions.includes('self-check')} hintOff={done} onHint={onHint} onSelfCheck={() => onAction('self-check')}
+        selfChecked={actions.includes('self-check')} showSelfCheck={feelingGoals || Boolean(level.bonus?.self)}
+        hintOff={done} onHint={onHint} onSelfCheck={() => onAction('self-check')}
       />
 
       {done && (
         <section className="lesson-done" role="region" aria-label="Level complete">
           <h2>🎉 Level complete!</h2>
+          {level.id === 15 && <p className="lesson-graduate">You&apos;re a Beatmaker graduate! 🎓</p>}
           <p className="lesson-stars">
             <span aria-hidden="true">{'⭐'.repeat(stars)}</span>
             <span className="visually-hidden">{`${stars} ${stars === 1 ? 'star' : 'stars'}`}</span>

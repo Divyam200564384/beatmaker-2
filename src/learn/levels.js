@@ -57,6 +57,9 @@ function tiedRuns(song) {
   const c = song.melody.cells;
   return c.filter((cell, col) => cell.row >= 0 && isCont(c, col) && !(col > 1 && isCont(c, col - 1))).length;
 }
+// Feeling goals (spec §5: the rule is only a hint) also count once the learner says it sounds right.
+export const goalMet = (goal, ctx) => goal.check(ctx) || (goal.feeling === true && ctx.actions.includes("self-check"));
+
 const hatHits = (ctx) => acts(ctx).filter((a) => a.startsWith("hat-hits:")).map((a) => Number(a.slice(9)));
 
 export const LEVELS = deepFreeze([
@@ -135,8 +138,8 @@ export const LEVELS = deepFreeze([
     tools: [...DRUM_TOOLS, "shift", "kit", "tempo"],
     goals: [
       // Kick count uses pattern trues, robust to hand-tapped dots.
-      { text: "Few kicks: 3 or fewer", hint: "Slide the kick's hits down to 3 or fewer.", check: ({ song }) => count(song.drums.rings.kick.pattern) <= 3 },
-      { text: "Slow tempo: 90 or less", hint: "Slide the tempo down to 90 or less.", check: ({ song }) => song.tempo <= 90 },
+      { text: "Few kicks: 3 or fewer", hint: "Slide the kick's hits down to 3 or fewer.", check: ({ song }) => count(song.drums.rings.kick.pattern) <= 3, feeling: true },
+      { text: "Slow tempo: 90 or less", hint: "Slide the tempo down to 90 or less.", check: ({ song }) => song.tempo <= 90, feeling: true },
     ],
     bonus: { text: "Sounds heavy to me ✓", self: true },
     unlocks: ["kits:all", "tempo"],
@@ -176,7 +179,7 @@ export const LEVELS = deepFreeze([
     tools: ["chords", "suggest", "maj7", "rhythm"],
     goals: [
       { text: "Start sad", hint: "Make the first bar Am or Em.", check: (c) => SAD.includes(prog(c)[0]) },
-      { text: "Use a dreamy chord", hint: "Put Cmaj7 or Fmaj7 in any bar.", check: (c) => prog(c).some((d) => d === "Imaj7" || d === "IVmaj7") },
+      { text: "Use a dreamy chord", hint: "Put Cmaj7 or Fmaj7 in any bar.", check: (c) => prog(c).some((d) => d === "Imaj7" || d === "IVmaj7"), feeling: true },
     ],
     bonus: { text: "Change the chord rhythm", check: ({ song }) => song.chords.rhythm !== "hold" },
     unlocks: ["maj7", "rhythm"],
@@ -186,7 +189,7 @@ export const LEVELS = deepFreeze([
     coach: ["Boss level! Make music for a rainy day."],
     startPatch: DEFAULT_DRUMS,
     tools: ["chords", "suggest", "maj7", "rhythm", "instruments", ...DRUM_TOOLS],
-    goals: [{ text: "At least 2 sad chords", hint: "Use Am or Em in at least 2 bars.", check: (c) => prog(c).filter((d) => SAD.includes(d)).length >= 2 }],
+    goals: [{ text: "At least 2 sad chords", hint: "Use Am or Em in at least 2 bars.", check: (c) => prog(c).filter((d) => SAD.includes(d)).length >= 2, feeling: true }],
     bonus: { text: "Sounds rainy to me ✓", self: true },
     unlocks: ["chord-instruments:5"],
   },
@@ -232,7 +235,7 @@ export const LEVELS = deepFreeze([
     id: 12, world: 4, title: "Question & answer",
     coach: ["Good tunes ask a question, then answer it.", "End your tune on **C**, the home note."],
     startPatch: FULL_BASE,
-    tools: ALL_TOOLS,
+    tools: [...DRUM_TOOLS, "shift", "kit", "tempo", "chords", "suggest", "maj7", "rhythm", "bass", "melody", "melodyTools", "undo"],
     goals: [{
       text: "End at home", hint: "Make the last note in the second half of the grid a C.",
       // Key root rows are those with row % 5 === 0.

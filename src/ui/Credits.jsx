@@ -14,7 +14,8 @@ export default function Credits({ onBack }) {
         <li><A href="https://github.com/danigb/smplr">smplr</A> (MIT)</li>
         <li>
           Soundfonts from <A href="https://github.com/gleitz/midi-js-soundfonts">gleitz/midi-js-soundfonts</A>:{' '}
-          MusyngKite, <A href={BY_SA}>CC BY-SA 3.0</A>; FluidR3_GM, <A href={BY}>CC BY 3.0</A>
+          MusyngKite soundfont, via gleitz/midi-js-soundfonts, <A href={BY_SA}>CC BY-SA 3.0</A>;{' '}
+          FluidR3_GM soundfont by Frank Wen, <A href={BY}>CC BY 3.0</A>
         </li>
         <li>Splendid Grand Piano (AKAI samples, public domain)</li>
         <li>smpldsnds drum-machines (public domain)</li>

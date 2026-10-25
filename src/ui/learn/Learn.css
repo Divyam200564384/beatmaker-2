@@ -102,6 +102,7 @@
   animation: lesson-pop 0.35s ease-out;
 }
 .lesson-done h2 { margin: 0; }
+.lesson-graduate { margin: 0.25rem 0 0; font-weight: 700; }
 .lesson-stars { font-size: 2rem; margin: 0.25rem 0 0.75rem; }
 @keyframes lesson-pop { from { transform: translate(-50%, 1rem); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {

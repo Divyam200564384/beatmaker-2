@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { LEVELS, WORLDS, ALL_TOOLS, DRUM_TOOLS } from "./levels.js";
+import { LEVELS, WORLDS, ALL_TOOLS, DRUM_TOOLS, goalMet } from "./levels.js";
 import { starsFor } from "./progress.js";
 import { applyPatch, createEmptySong, setRingEuclid, toggleRingStep, setChord, setTempo, setChordRhythm } from "../song/model.js";
 
@@ -46,6 +46,25 @@ describe("level data", () => {
     expect(lv(9).goals[0].hint).toBe("Use Am or Em in at least 2 bars.");
     expect(lv(2).goals[0].hint).toContain("clap dot");
   });
+  it("level 12 lists its tools explicitly (no mixer, key, instruments, share, wav)", () => {
+    expect(lv(12).tools).toEqual([
+      ...DRUM_TOOLS, "shift", "kit", "tempo", "chords", "suggest", "maj7", "rhythm", "bass", "melody", "melodyTools", "undo",
+    ]);
+  });
+  it("feeling goals are met by their rule or by the self-check, other goals only by their rule", () => {
+    const feeling = LEVELS.flatMap((l) => l.goals.filter((g) => g.feeling).map((g) => `${l.id}:${g.text}`));
+    expect(feeling).toEqual([
+      "5:Few kicks: 3 or fewer", "5:Slow tempo: 90 or less", "8:Use a dreamy chord", "9:At least 2 sad chords",
+    ]);
+    for (const l of LEVELS) {
+      const s = start(l);
+      for (const g of l.goals) {
+        expect(goalMet(g, { song: s, actions: ["self-check"] })).toBe(Boolean(g.feeling));
+      }
+    }
+    // The rule alone still counts.
+    expect(goalMet(lv(5).goals[1], { song: setTempo(start(lv(5)), 80), actions: [] })).toBe(true);
+  });
   it("3 starts with the default 8-hit hat", () => {
     expect(start(lv(3)).drums.rings.hat.hits).toBe(8);
   });
@@ -68,7 +87,7 @@ describe("level data", () => {
         l.goals.forEach((g) => expect(g.hint.length).toBeGreaterThan(5));
       });
       it("no goal is true on its own start song with no actions", () => {
-        l.goals.forEach((g) => expect(g.check({ song: start(l), actions: [] })).toBe(false));
+        l.goals.forEach((g) => expect(goalMet(g, { song: start(l), actions: [] })).toBe(false));
       });
     });
   }

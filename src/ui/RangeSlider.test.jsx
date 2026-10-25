@@ -36,4 +36,12 @@ describe('RangeSlider', () => {
     expect(onCommit).toHaveBeenCalledTimes(1)
     expect(onCommit).toHaveBeenCalledWith(70)
   })
+
+  it('a release (change) never previews after the commit', () => {
+    const order = []
+    render(<RangeSlider label="Level" min={0} max={100} value={50} onPreview={() => order.push('preview')} onCommit={() => order.push('commit')} />)
+    fireEvent.change(screen.getByLabelText('Level'), { target: { value: '80' } })
+    expect(order).toEqual(['commit'])
+  })
 })
+

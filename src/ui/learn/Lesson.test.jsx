@@ -160,4 +160,66 @@ describe('Lesson', () => {
     unmount()
     expect(engine.stop).toHaveBeenCalled()
   })
+
+  it('level 1: a drag that passes 4 and is released at 8 does not complete the level', () => {
+    lesson(LEVELS[0])
+    const slider = screen.getByLabelText('Kick hits')
+    fireEvent.input(slider, { target: { value: '4' } })
+    fireEvent.input(slider, { target: { value: '8' } })
+    fireEvent.change(slider, { target: { value: '8' } })
+    expect(goal('Give the kick 4 even hits')).toHaveTextContent('⬜')
+    expect(screen.queryByRole('region', { name: 'Level complete' })).toBeNull()
+  })
+
+  it('level 1: a drag released at 4 completes the level', () => {
+    lesson(LEVELS[0])
+    const slider = screen.getByLabelText('Kick hits')
+    fireEvent.input(slider, { target: { value: '2' } })
+    fireEvent.input(slider, { target: { value: '4' } })
+    expect(screen.queryByRole('region', { name: 'Level complete' })).toBeNull()
+    fireEvent.change(slider, { target: { value: '4' } })
+    expect(goal('Give the kick 4 even hits')).toHaveTextContent('✅')
+    expectStars(2, '⭐⭐')
+  })
+
+  it('level 5: "Sounds right to me" meets both feeling goals', () => {
+    lesson(LEVELS[4])
+    expect(goal('Few kicks: 3 or fewer')).toHaveTextContent('⬜')
+    fireEvent.click(screen.getByRole('button', { name: 'Sounds right to me ✓' }))
+    expect(goal('Few kicks: 3 or fewer')).toHaveTextContent('✅')
+    expect(goal('Slow tempo: 90 or less')).toHaveTextContent('✅')
+    expect(celebration()).toBeInTheDocument()
+  })
+
+  it('level 8: the self-check button shows and only meets the dreamy-chord goal', () => {
+    lesson(LEVELS[7])
+    fireEvent.click(screen.getByRole('button', { name: 'Sounds right to me ✓' }))
+    expect(goal('Use a dreamy chord')).toHaveTextContent('✅')
+    expect(goal('Start sad')).toHaveTextContent('⬜')
+    expect(screen.queryByRole('region', { name: 'Level complete' })).toBeNull()
+  })
+
+  it('level 9: the self-check button meets the sad-chords goal', () => {
+    lesson(LEVELS[8])
+    fireEvent.click(screen.getByRole('button', { name: 'Sounds right to me ✓' }))
+    expect(goal('At least 2 sad chords')).toHaveTextContent('✅')
+    expect(celebration()).toBeInTheDocument()
+  })
+
+  it('levels without feeling goals or a self bonus have no self-check button', () => {
+    lesson(LEVELS[1])
+    expect(screen.queryByRole('button', { name: 'Sounds right to me ✓' })).toBeNull()
+  })
+
+  it('level 15 celebration names the learner a graduate', () => {
+    lesson({ ...LEVELS[14], goals: [{ text: 'Done', hint: 'Nothing to do here.', check: () => true }] })
+    expect(within(celebration()).getByText("You're a Beatmaker graduate! 🎓")).toBeInTheDocument()
+  })
+
+  it('other levels do not show the graduation line', () => {
+    lesson(LEVELS[0])
+    setHits('Kick', 4)
+    expect(within(celebration()).queryByText(/graduate/)).toBeNull()
+  })
 })
+

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSong } from './useSong.js'
 import { createDefaultSong, setTempo, setKey } from '../song/model.js'
@@ -7,6 +7,10 @@ import { encodeSong } from '../song/codec.js'
 beforeEach(() => {
   localStorage.clear()
   history.replaceState(null, '', '#')
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 describe('useSong', () => {
@@ -55,9 +59,11 @@ describe('useSong', () => {
     expect(result.current.canUndo).toBe(false)
   })
 
-  it('writes the hash and storage on change', () => {
+  it('writes the hash and storage on change, after a short pause', () => {
+    vi.useFakeTimers()
     const { result } = renderHook(() => useSong())
     act(() => result.current.commit((s) => setKey(s, 5)))
+    act(() => vi.advanceTimersByTime(300))
     const enc = encodeSong(result.current.song)
     expect(location.hash).toBe('#' + enc)
     expect(JSON.parse(localStorage.getItem('bm2.song'))).toBe(enc)
@@ -73,5 +79,82 @@ describe('useSong', () => {
     act(() => result.current.commit((s) => setKey(s, 5)))
     expect(location.hash).toBe(hashBefore)
     expect(JSON.parse(localStorage.getItem('bm2.song'))).toBe(encodeSong(setTempo(createDefaultSong(), 100)))
+  })
+
+  it('many rapid previews write the hash only a bounded number of times', () => {
+    vi.useFakeTimers()
+    const spy = vi.spyOn(history, 'replaceState')
+    const { result } = renderHook(() => useSong())
+    for (let t = 60; t <= 160; t++) {
+      act(() => result.current.preview((s) => setTempo(s, t)))
+      act(() => vi.advanceTimersByTime(20))
+    }
+    act(() => result.current.commit((s) => setTempo(s, 160)))
+    act(() => vi.advanceTimersByTime(1000))
+    expect(spy.mock.calls.length).toBeLessThanOrEqual(2)
+    expect(location.hash).toBe('#' + encodeSong(result.current.song))
+  })
+
+  it('a throwing replaceState does not crash the hook', () => {
+    vi.useFakeTimers()
+    vi.spyOn(history, 'replaceState').mockImplementation(() => {
+      throw new DOMException('Attempt to use history.replaceState() more than 100 times', 'SecurityError')
+    })
+    const { result } = renderHook(() => useSong())
+    act(() => result.current.commit((s) => setTempo(s, 100)))
+    act(() => vi.advanceTimersByTime(1000))
+    expect(result.current.song.tempo).toBe(100)
+  })
+
+  it('writes a pending song on unmount and on pagehide', () => {
+    vi.useFakeTimers()
+    const { result, unmount } = renderHook(() => useSong())
+    act(() => result.current.commit((s) => setTempo(s, 101)))
+    window.dispatchEvent(new Event('pagehide'))
+    expect(location.hash).toBe('#' + encodeSong(result.current.song))
+    act(() => result.current.commit((s) => setTempo(s, 102)))
+    const enc = encodeSong(result.current.song)
+    unmount()
+    expect(location.hash).toBe('#' + enc)
+  })
+
+  it('reports previewing while a drag is not committed', () => {
+    const { result } = renderHook(() => useSong())
+    expect(result.current.previewing).toBe(false)
+    act(() => result.current.preview((s) => setTempo(s, 100)))
+    expect(result.current.previewing).toBe(true)
+    act(() => result.current.commit((s) => setTempo(s, 100)))
+    expect(result.current.previewing).toBe(false)
+  })
+
+  it('a share link keeps the autosaved song one Undo away', () => {
+    const mine = setTempo(createDefaultSong(), 100)
+    localStorage.setItem('bm2.song', JSON.stringify(encodeSong(mine)))
+    history.replaceState(null, '', '#' + encodeSong(setTempo(createDefaultSong(), 90)))
+    const { result } = renderHook(() => useSong())
+    expect(result.current.song.tempo).toBe(90)
+    expect(result.current.notice).toBe('Your previous song is one Undo away.')
+    expect(result.current.openedLink).toBe(true)
+    expect(result.current.canUndo).toBe(true)
+    act(() => result.current.undo())
+    expect(result.current.song).toEqual(mine)
+  })
+
+  it('a hash equal to the autosave is not treated as a new link', () => {
+    const enc = encodeSong(setTempo(createDefaultSong(), 100))
+    localStorage.setItem('bm2.song', JSON.stringify(enc))
+    history.replaceState(null, '', '#' + enc)
+    const { result } = renderHook(() => useSong())
+    expect(result.current.notice).toBe(null)
+    expect(result.current.openedLink).toBe(false)
+    expect(result.current.canUndo).toBe(false)
+  })
+
+  it('a link with no autosave opens without a notice', () => {
+    history.replaceState(null, '', '#' + encodeSong(setTempo(createDefaultSong(), 90)))
+    const { result } = renderHook(() => useSong())
+    expect(result.current.notice).toBe(null)
+    expect(result.current.openedLink).toBe(true)
+    expect(result.current.canUndo).toBe(false)
   })
 })

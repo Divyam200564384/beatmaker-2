@@ -28,7 +28,9 @@ export default function RangeSlider({ value, min, max, step, onPreview, onCommit
       max={max}
       step={step}
       value={value}
-      onChange={(e) => onPreview?.(Number(e.target.value))}
+      // A native `change` is the release: the listener above commits it, so it must not preview afterwards
+      // (a trailing preview would leave the song mid-drag).
+      onChange={(e) => { if (e.nativeEvent?.type !== 'change') onPreview?.(Number(e.target.value)) }}
     />
   )
 }

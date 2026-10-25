@@ -20,6 +20,7 @@ export default function LevelMap({ progress, onOpen, onBack }) {
       <div className="map-top">
         <button type="button" className="home-link" onClick={onBack}>Back</button>
         <h1 className="map-title">🎓 Learn</h1>
+        {progress.stars[15] > 0 && <span className="graduate-badge">🎓 Graduate</span>}
       </div>
       {WORLDS.map((name, w) => (
         <section key={name} className="map-world" style={{ '--c': WORLD_COLORS[w] }} aria-labelledby={`world-${w + 1}`}>

@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types -- small learn component */
 
-export default function Goals({ goals, met, revealed, bonus, bonusMet, selfChecked, hintOff = false, onHint, onSelfCheck }) {
+export default function Goals({ goals, met, revealed, bonus, bonusMet, selfChecked, showSelfCheck = Boolean(bonus?.self), hintOff = false, onHint, onSelfCheck }) {
   const canHint = !hintOff && met.some((m) => !m)
   return (
     <section className="goals" aria-label="Goals">
@@ -22,7 +22,7 @@ export default function Goals({ goals, met, revealed, bonus, bonusMet, selfCheck
       </ul>
       <div className="goals-actions">
         <button type="button" className="learn-btn" onClick={onHint} disabled={!canHint}>Hint</button>
-        {bonus?.self && (
+        {showSelfCheck && (
           <button type="button" className="learn-btn" aria-pressed={selfChecked} onClick={onSelfCheck}>
             Sounds right to me ✓
           </button>
