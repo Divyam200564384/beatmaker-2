@@ -1,0 +1,90 @@
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.learn-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 1rem;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.learn-btn[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.learn-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- map ---- */
+.map { max-width: 56rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.map-top { display: flex; align-items: center; gap: 1rem; }
+.map-title { margin: 0; font-size: 2rem; }
+.map-world { margin-top: 1.5rem; }
+.map-world-title { margin: 0 0 0.5rem; font-size: 1.15rem; color: var(--muted); }
+.map-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.map-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 7.5rem;
+  min-height: 6.5rem;
+  padding: 0.5rem;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.map-node-num { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+.map-node-title { font-size: 0.85rem; text-align: center; }
+.map-node-stars { font-size: 0.85rem; min-height: 1.2em; }
+.map-node.current { border-color: var(--drums); box-shadow: 0 0 0 4px rgba(228, 87, 46, 0.25); animation: map-pulse 1.6s ease-in-out infinite; }
+.map-node.locked { background: var(--paper); color: var(--muted); cursor: default; }
+@keyframes map-pulse { 50% { box-shadow: 0 0 0 8px rgba(228, 87, 46, 0.12); } }
+
+/* ---- lesson ---- */
+.lesson { padding-bottom: 8rem; }
+.lesson-top { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; border-bottom: 2px solid var(--line); background: #fff; }
+.lesson-title { margin: 0; font-size: 1.1rem; flex: 1; }
+.lesson-progress { width: 8rem; height: 0.75rem; border-radius: 999px; background: var(--line); overflow: hidden; }
+.lesson-progress span { display: block; height: 100%; background: var(--melody); transition: width 0.3s; }
+.coach { display: flex; align-items: center; gap: 0.75rem; max-width: 56rem; margin: 0.75rem auto; padding: 0 1rem; }
+.coach-owl { font-size: 2.5rem; }
+.coach-bubble { flex: 1; margin: 0; padding: 0.75rem 1rem; border: 2px solid var(--line); border-radius: 16px; background: #fff; font-size: 1.1rem; }
+.lesson-compare { display: flex; flex-wrap: wrap; gap: 0.5rem; max-width: 56rem; margin: 0.5rem auto; padding: 0 1rem; }
+.lesson-quiz { max-width: 56rem; margin: 0 auto; }
+.lesson-quiz p { padding: 0 1rem; margin: 0.25rem 0; min-height: 1.2em; }
+.goals { max-width: 56rem; margin: 1rem auto; padding: 0 1rem; }
+.goals-list { list-style: none; margin: 0 0 0.75rem; padding: 0; display: grid; gap: 0.4rem; font-size: 1.05rem; }
+.goals-met { color: var(--muted); }
+.goals-hint { margin: 0.25rem 0 0 1.75rem; color: var(--ink); font-weight: 700; }
+.goals-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.lesson-done {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 30;
+  transform: translateX(-50%);
+  width: min(26rem, calc(100% - 2rem));
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(29, 35, 64, 0.25);
+  text-align: center;
+  animation: lesson-pop 0.35s ease-out;
+}
+.lesson-done h2 { margin: 0; }
+.lesson-stars { font-size: 2rem; margin: 0.25rem 0 0.75rem; }
+@keyframes lesson-pop { from { transform: translate(-50%, 1rem); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .map-node.current, .lesson-done { animation: none; }
+}

@@ -6,13 +6,16 @@ import './LayerHeader.css'
 
 const show = (tools, id) => !tools || tools.has(id)
 
-export default function LayerHeader({ layer, title, song, commit, preview, options = null, tools = null, status, onRetry }) {
+export default function LayerHeader({ layer, title, song, commit, preview, options = null, tools = null, status, onRetry, onAction }) {
   const isDrums = layer === 'drums'
   const mix = song[layer].mix
   // The current choice always stays listed so the controlled select never shows a wrong value.
   const current = isDrums ? song.drums.kit : song[layer].instrument
   const allowed = (id) => !options || options.includes(id) || id === current
-  const setMixPart = (partial) => commit((s) => setMix(s, layer, partial))
+  const setMixPart = (partial, action) => {
+    commit((s) => setMix(s, layer, partial))
+    onAction?.(action)
+  }
 
   let picker = null
   if (isDrums && show(tools, 'kit')) {
@@ -34,7 +37,7 @@ export default function LayerHeader({ layer, title, song, commit, preview, optio
         className="layer-header-select"
         aria-label="Instrument"
         value={song[layer].instrument}
-        onChange={(e) => { const v = e.target.value; commit((s) => setInstrument(s, layer, v)) }}
+        onChange={(e) => { const v = e.target.value; commit((s) => setInstrument(s, layer, v)); onAction?.(`instrument:${layer}`) }}
       >
         {CATEGORIES.map((cat) => {
           const items = INSTRUMENTS.filter((i) => i.category === cat && allowed(i.id))
@@ -61,18 +64,18 @@ export default function LayerHeader({ layer, title, song, commit, preview, optio
           <RangeSlider
             label="Volume" min={0} max={100} value={mix.volume}
             onPreview={(v) => preview((s) => setMix(s, layer, { volume: v }))}
-            onCommit={(v) => setMixPart({ volume: v })}
+            onCommit={(v) => setMixPart({ volume: v }, 'volume')}
           />
         </label>
       )}
       <button
         type="button" className="layer-header-btn" aria-pressed={mix.mute}
-        onClick={() => setMixPart({ mute: !mix.mute })}
+        onClick={() => setMixPart({ mute: !mix.mute }, `${mix.mute ? 'unmute' : 'mute'}:${layer}`)}
       >Mute</button>
       {showMixer && (
         <button
           type="button" className="layer-header-btn" aria-pressed={mix.solo}
-          onClick={() => setMixPart({ solo: !mix.solo })}
+          onClick={() => setMixPart({ solo: !mix.solo }, 'solo')}
         >Solo</button>
       )}
       {showMixer && (
@@ -81,7 +84,7 @@ export default function LayerHeader({ layer, title, song, commit, preview, optio
           <RangeSlider
             label="Space" min={0} max={100} value={mix.space}
             onPreview={(v) => preview((s) => setMix(s, layer, { space: v }))}
-            onCommit={(v) => setMixPart({ space: v })}
+            onCommit={(v) => setMixPart({ space: v }, 'space')}
           />
         </label>
       )}

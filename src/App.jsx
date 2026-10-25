@@ -3,6 +3,10 @@ import Studio from './ui/Studio.jsx'
 import Home from './ui/Home.jsx'
 import Credits from './ui/Credits.jsx'
 import Menu from './ui/Menu.jsx'
+import LevelMap from './ui/learn/LevelMap.jsx'
+import Lesson from './ui/learn/Lesson.jsx'
+import { LEVELS } from './learn/levels.js'
+import { loadProgress, saveProgress, completeLevel } from './learn/progress.js'
 import './ui/Home.css'
 import { useSong } from './hooks/useSong.js'
 import { useEngine } from './hooks/useEngine.js'
@@ -51,6 +55,8 @@ export default function App() {
   const engine = useEngine(song)
   const hints = useHints(engine.playing)
   const [screen, setScreen] = useState(() => (location.hash.length > 1 ? 'studio' : 'home'))
+  const [progress, setProgress] = useState(loadProgress)
+  const [lessonId, setLessonId] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const closeMenu = useCallback(() => setMenuOpen(false), [])
   const [showLoadError, setShowLoadError] = useState(true)
@@ -63,17 +69,33 @@ export default function App() {
   if (screen === 'credits') return <Credits onBack={() => setScreen('home')} />
   if (screen === 'learn-map') {
     return (
-      <div className="home">
-        <h1>Learn</h1>
-        <p>Lessons are coming soon.</p>
-        <button type="button" className="home-link" onClick={() => setScreen('home')}>Back</button>
-      </div>
+      <LevelMap
+        progress={progress}
+        onOpen={(id) => { setLessonId(id); setScreen('lesson') }}
+        onBack={() => setScreen('home')}
+      />
+    )
+  }
+  if (screen === 'lesson') {
+    const level = LEVELS.find((l) => l.id === lessonId)
+    return (
+      <Lesson
+        key={level.id} level={level} progress={progress} engine={engine}
+        onExit={() => setScreen('learn-map')}
+        onDone={(stars) => {
+          const next = completeLevel(progress, level.id, stars)
+          saveProgress(next)
+          setProgress(next)
+          setScreen('learn-map')
+        }}
+      />
     )
   }
   if (screen === 'home') {
     return (
       <Home
         onLearn={() => setScreen('learn-map')}
+        learnLabel={Object.keys(progress.stars).length ? `Continue · Level ${progress.current}` : 'Start'}
         onStudio={() => setScreen('studio')}
         onCredits={() => setScreen('credits')}
       />
@@ -92,7 +114,7 @@ export default function App() {
           onClose={closeMenu}
           onHome={() => { if (engine.playing) engine.toggle(); setScreen('home') }}
           onCredits={() => { if (engine.playing) engine.toggle(); setScreen('credits') }}
-          onResetProgress={clearProgress}
+          onResetProgress={() => { clearProgress(); setProgress(loadProgress()) }}
           onNewSong={() => commit(createDefaultSong)}
         />
       )}

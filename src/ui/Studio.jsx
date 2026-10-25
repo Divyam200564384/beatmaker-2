@@ -31,6 +31,7 @@ function engineStatusText(status = {}) {
 export default function Studio({
   song, commit, preview, engine, tools = null, options = null, hints = [],
   undo, redo, canUndo = false, canRedo = false, onMenu, menuOpen = false, statusText = '',
+  onAction, ringHint = null, shareUrl,
 }) {
   const wide = useMediaQuery('(min-width: 900px)')
   const [tab, setTab] = useState('drums')
@@ -42,17 +43,21 @@ export default function Studio({
     else engine.preview(layer, n)
   }
 
+  // options: null (everything), one id list for every layer, or { drums, chords, bass, melody } lists.
+  const optionsFor = (id) => (options && !Array.isArray(options) ? options[id] ?? null : options)
+
   const panel = (l) => {
     let body = null
-    if (l.id === 'drums') body = <RhythmRings song={song} commit={commit} preview={preview} onSound={onSound} step={step} tools={tools} />
+    if (l.id === 'drums') body = <RhythmRings song={song} commit={commit} preview={preview} onSound={onSound} step={step} tools={tools} hint={ringHint} onAction={onAction} />
     else if (l.id === 'chords') body = <ChordPanel song={song} commit={commit} onSound={onSound} step={step} tools={tools} />
-    else if (l.id === 'bass') body = <BassPanel song={song} commit={commit} />
+    else if (l.id === 'bass') body = <BassPanel song={song} commit={commit} onAction={onAction} />
     else body = <MelodyGrid song={song} commit={commit} preview={preview} onSound={onSound} step={step} tools={tools} />
     return (
       <section key={l.id} className="studio-panel" id={`panel-${l.id}`} role={wide ? undefined : 'tabpanel'} aria-label={wide ? undefined : l.title}>
         <LayerHeader
           layer={l.id} title={l.title} song={song} commit={commit} preview={preview}
-          options={options} tools={tools} status={engine.status?.[l.id]} onRetry={() => engine.retry?.(l.id)}
+          options={optionsFor(l.id)} tools={tools} status={engine.status?.[l.id]} onRetry={() => engine.retry?.(l.id)}
+          onAction={onAction}
         />
         {body}
       </section>
@@ -66,6 +71,7 @@ export default function Studio({
         playing={engine.playing} onToggle={engine.toggle}
         onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo}
         onMenu={onMenu} menuOpen={menuOpen} statusText={engineStatusText(engine.status) || statusText} tools={tools}
+        onShare={() => onAction?.('share')} onWav={() => onAction?.('wav')} shareUrl={shareUrl}
       />
       {hints.map((h) => <p key={h} className="studio-hint" role="note">{h}</p>)}
       <main className={`studio${wide ? ' studio-grid' : ''}`}>

@@ -9,7 +9,7 @@ import './PlayBar.css'
 
 export default function PlayBar({
   song, commit, preview, playing, onToggle, onUndo, onRedo, canUndo, canRedo,
-  onShare, onWav, onMenu, menuOpen = false, statusText = '', tools = null,
+  onShare, onWav, onMenu, menuOpen = false, statusText = '', tools = null, shareUrl,
 }) {
   const [msg, setMsg] = useState('')
   const [fallbackUrl, setFallbackUrl] = useState(null)
@@ -32,11 +32,11 @@ export default function PlayBar({
   async function share() {
     setFallbackUrl(null)
     try {
-      await navigator.clipboard.writeText(location.href)
+      await navigator.clipboard.writeText(shareUrl ?? location.href)
       flash('Link copied!')
     } catch {
       setMsg('')
-      setFallbackUrl(location.href)
+      setFallbackUrl(shareUrl ?? location.href)
     }
     onShare?.()
   }
@@ -100,7 +100,9 @@ export default function PlayBar({
       {show('wav') && (
         <button type="button" aria-label="Save WAV" disabled={rendering} onClick={wav}><Download aria-hidden="true" /></button>
       )}
-      <button type="button" aria-label="Menu" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={onMenu}><Menu aria-hidden="true" /></button>
+      {onMenu !== null && (
+        <button type="button" aria-label="Menu" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={onMenu}><Menu aria-hidden="true" /></button>
+      )}
       {fallbackUrl && (
         <input
           className="playbar-link" readOnly aria-label="Song link" value={fallbackUrl}

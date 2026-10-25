@@ -31,7 +31,7 @@ export function completeLevel(p, id, stars) {
 
 export const isUnlocked = (p, id) => id <= p.current;
 
-const CHORD_INSTRUMENTS = [
+export const CHORD_INSTRUMENTS = [
   "electric_piano_1", "acoustic_grand_piano", "pad_2_warm", "string_ensemble_1", "acoustic_guitar_nylon",
 ];
 

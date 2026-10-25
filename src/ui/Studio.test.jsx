@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, within, waitFor } from '@testing-library/react'
 import Studio from './Studio.jsx'
 import { createDefaultSong } from '../song/model.js'
 
@@ -72,5 +72,50 @@ describe('Studio', () => {
   it('shows hint messages', () => {
     render(<Studio {...base()} hints={['No sound? Check your silent switch.']} />)
     expect(screen.getByText('No sound? Check your silent switch.')).toBeInTheDocument()
+  })
+
+  it('emits actions from the panels', async () => {
+    const onAction = vi.fn()
+    Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue() } })
+    render(<Studio {...base()} onAction={onAction} />)
+    const bass = screen.getByRole('heading', { name: 'Bass' }).closest('header')
+    fireEvent.click(within(bass).getByRole('button', { name: 'Mute' }))
+    expect(onAction).toHaveBeenLastCalledWith('mute:bass')
+    fireEvent.click(within(bass).getByRole('button', { name: 'Solo' }))
+    expect(onAction).toHaveBeenLastCalledWith('solo')
+    fireEvent.change(within(bass).getByLabelText('Volume'), { target: { value: '30' } })
+    expect(onAction).toHaveBeenLastCalledWith('volume')
+    fireEvent.change(within(bass).getByLabelText('Space'), { target: { value: '30' } })
+    expect(onAction).toHaveBeenLastCalledWith('space')
+    fireEvent.change(within(bass).getByLabelText('Instrument'), { target: { value: 'acoustic_bass' } })
+    expect(onAction).toHaveBeenLastCalledWith('instrument:bass')
+    fireEvent.click(screen.getByRole('button', { name: 'Walking' }))
+    expect(onAction).toHaveBeenLastCalledWith('bass-style')
+    fireEvent.change(screen.getByLabelText('Hat hits'), { target: { value: '5' } })
+    expect(onAction).toHaveBeenLastCalledWith('hat-hits:5')
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }))
+    await waitFor(() => expect(onAction).toHaveBeenLastCalledWith('share'))
+  })
+
+  it('emits nothing on a slider preview', () => {
+    const onAction = vi.fn()
+    render(<Studio {...base()} onAction={onAction} />)
+    fireEvent.input(screen.getByLabelText('Hat hits'), { target: { value: '5' } })
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('emits unmute when the layer was muted', () => {
+    const onAction = vi.fn()
+    const song = createDefaultSong()
+    song.bass.mix.mute = true
+    render(<Studio {...base()} song={song} onAction={onAction} />)
+    const bass = screen.getByRole('heading', { name: 'Bass' }).closest('header')
+    fireEvent.click(within(bass).getByRole('button', { name: 'Mute' }))
+    expect(onAction).toHaveBeenLastCalledWith('unmute:bass')
+  })
+
+  it('accepts per-layer options', () => {
+    render(<Studio {...base()} options={{ drums: ['TR-808'], chords: ['electric_piano_1'], bass: ['electric_bass_finger'], melody: ['marimba'] }} />)
+    expect(screen.getByLabelText('Drum kit').querySelectorAll('option')).toHaveLength(1)
   })
 })

@@ -17,7 +17,7 @@ const HIT_R = 12
 const angle = (i) => (i / 16) * 2 * Math.PI - Math.PI / 2
 const pos = (r, i) => [Math.cos(angle(i)) * r, Math.sin(angle(i)) * r]
 
-export default function RhythmRings({ song, commit, preview, onSound, step = null, tools = null, hint = null, ringSamples }) {
+export default function RhythmRings({ song, commit, preview, onSound, step = null, tools = null, hint = null, ringSamples, onAction }) {
   const has = (id) => !tools || tools.has(id)
   const visible = RINGS.filter((r) => has(r.id))
   const cur = step == null ? -1 : step % 16
@@ -105,7 +105,10 @@ export default function RhythmRings({ song, commit, preview, onSound, step = nul
                 <RangeSlider
                   label={`${ring.name} hits`} min={0} max={16} value={r.hits}
                   onPreview={(v) => preview((s) => setRingEuclid(s, ring.id, v, s.drums.rings[ring.id].shift))}
-                  onCommit={(v) => commit((s) => setRingEuclid(s, ring.id, v, s.drums.rings[ring.id].shift))}
+                  onCommit={(v) => {
+                    commit((s) => setRingEuclid(s, ring.id, v, s.drums.rings[ring.id].shift))
+                    if (ring.id === 'hat') onAction?.(`hat-hits:${v}`)
+                  }}
                 />
               </label>
               )}

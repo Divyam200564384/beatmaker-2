@@ -4,6 +4,9 @@ import { createEngine } from '../audio/engine.js'
 export function useEngine(song) {
   const engineRef = useRef(null)
   const songRef = useRef(song)
+  // A lesson plays its own song (or a compare song) through this same engine.
+  const sourceRef = useRef(null)
+  const current = () => sourceRef.current ?? songRef.current
   const [playing, setPlaying] = useState(false)
   const [step, setStep] = useState(-1)
   const [status, setStatus] = useState({})
@@ -15,14 +18,14 @@ export function useEngine(song) {
         onStep: setStep,
         onStatus: (s) => setStatus((prev) => ({ ...prev, [s.layer]: s })),
       })
-      engineRef.current.setSong(songRef.current)
+      engineRef.current.setSong(current())
     }
     return engineRef.current
   }, [])
 
   useEffect(() => {
     songRef.current = song
-    engineRef.current?.setSong(song)
+    if (!sourceRef.current) engineRef.current?.setSong(song)
   }, [song])
 
   useEffect(() => () => engineRef.current?.stop(), [])
@@ -37,7 +40,7 @@ export function useEngine(song) {
     }
     setPlaying(true)
     try {
-      await engine.start(songRef.current)
+      await engine.start(current())
     } catch {
       setPlaying(false)
     }
@@ -47,5 +50,17 @@ export function useEngine(song) {
 
   const retry = useCallback((layer) => get().retry(layer), [get])
 
-  return { playing, toggle, step, status, preview, retry }
+  // null hands playback back to the free-play song.
+  const setSource = useCallback((s) => {
+    sourceRef.current = s
+    engineRef.current?.setSong(s ?? songRef.current)
+  }, [])
+
+  const stop = useCallback(() => {
+    engineRef.current?.stop()
+    setPlaying(false)
+    setStep(-1)
+  }, [])
+
+  return { playing, toggle, step, status, preview, retry, setSource, stop }
 }

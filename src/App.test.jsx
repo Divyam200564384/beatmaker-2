@@ -87,6 +87,31 @@ describe('App', () => {
   })
 })
 
+describe('App learn mode', () => {
+  it('Learn opens the map, a finished lesson saves progress and returns to the map', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Level 1, current' }))
+    expect(screen.getByText('World 1 · Level 1 · Heartbeat')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Kick hits'), { target: { value: '4' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Next level ▶' }))
+    expect(screen.getByRole('button', { name: 'Level 1, Heartbeat, 2 stars' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Level 2, current' })).toBeEnabled()
+    expect(JSON.parse(localStorage.getItem('bm2.progress'))).toEqual({ stars: { 1: 2 }, current: 2 })
+    expect(localStorage.getItem('bm2.song')).not.toBeNull() // free play song untouched by the lesson
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByRole('button', { name: 'Continue · Level 2' })).toBeInTheDocument()
+  })
+
+  it('exiting a lesson returns to the map', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Level 1, current' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exit lesson' }))
+    expect(screen.getByRole('button', { name: 'Level 1, current' })).toBeInTheDocument()
+  })
+})
+
 describe('Credits', () => {
   it('lists licences with links', () => {
     render(<Credits onBack={() => {}} />)
