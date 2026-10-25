@@ -38,11 +38,15 @@ async function check(n, name, fn) {
 
 async function startServer() {
   console.log('Building…')
-  execSync('npm run build', { stdio: 'ignore' })
+  execSync('npm run build', { stdio: 'inherit' })
   console.log(`Starting vite preview on :${PORT}…`)
+  const stale = await fetch(BASE).then(() => true, () => false)
+  if (stale) throw new Error(`something is already serving :${PORT}; stop it first`)
   server = spawn(`npx vite preview --port ${PORT} --strictPort --host 127.0.0.1`, { shell: true, stdio: 'ignore' })
   const until = Date.now() + 30_000
   while (Date.now() < until) {
+    // An early exit means the port was taken (e.g. a stale server on :4174): fail rather than test the stale copy.
+    if (server.exitCode !== null) throw new Error(`vite preview exited (code ${server.exitCode}); is port ${PORT} already in use?`)
     try {
       if ((await fetch(BASE)).ok) return
     } catch {
@@ -201,6 +205,7 @@ async function main() {
       await page.getByLabel('Tempo').fill('118')
       await page.locator('#panel-chords').getByRole('button', { name: 'Strum' }).click()
       await page.getByRole('button', { name: 'Share' }).click()
+      await sleep(600) // the hash/autosave write waits for a 300 ms pause in editing
       hash = await page.evaluate(() => location.hash)
       assert(hash.length > 10, 'no song in the URL hash')
       const before = await visibleSong(page)

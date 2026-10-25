@@ -41,8 +41,8 @@ Pushing to `main` deploys to GitHub Pages through `.github/workflows/deploy.yml`
 
 - [smplr](https://github.com/danigb/smplr) (MIT)
 - Soundfonts from [gleitz/midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts):
-  MusyngKite, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/);
-  FluidR3_GM, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)
+  MusyngKite soundfont, via gleitz/midi-js-soundfonts, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/);
+  FluidR3_GM soundfont by Frank Wen, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)
 - Splendid Grand Piano (AKAI samples, public domain)
 - smpldsnds drum-machines (public domain)
 - Sonic Pi samples (CC0)
