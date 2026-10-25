@@ -1,38 +1,91 @@
-import { useState } from 'react'
-import PlayBar from './ui/PlayBar.jsx'
+import { useState, useEffect } from 'react'
+import Studio from './ui/Studio.jsx'
+import Home from './ui/Home.jsx'
+import Credits from './ui/Credits.jsx'
+import Menu from './ui/Menu.jsx'
+import './ui/Home.css'
 import { useSong } from './hooks/useSong.js'
 import { useEngine } from './hooks/useEngine.js'
+import { createDefaultSong } from './song/model.js'
+import { safeGet, safeSet } from './storage.js'
 
-function engineStatusText(status) {
-  const entries = Object.values(status)
-  const failed = entries.find((s) => s.state === 'error')
-  if (failed) return `Couldn't load ${failed.layer}`
-  const loading = entries.filter((s) => s.state === 'loading')
-  if (loading.length) {
-    const pct = Math.round((loading.reduce((a, s) => a + (s.progress ?? 0), 0) / loading.length) * 100)
-    return `Loading… ${pct}%`
+function clearProgress() {
+  try {
+    localStorage.removeItem('bm2.progress')
+  } catch {
+    // storage unavailable: nothing to clear
   }
-  return ''
+}
+
+function isIos() {
+  const ua = navigator.userAgent || ''
+  return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
+}
+
+function storageWorks() {
+  if (!safeSet('bm2.probe', 1)) return false
+  try {
+    localStorage.removeItem('bm2.probe')
+  } catch {
+    // ignore
+  }
+  return true
+}
+
+function useHints(playing) {
+  const [hints, setHints] = useState(() => (storageWorks() ? [] : ["Progress can't be saved in this browser."]))
+  useEffect(() => {
+    if (!playing || !isIos()) return
+    const seen = safeGet('bm2.hints') ?? {}
+    if (seen.silentSwitch) return
+    safeSet('bm2.hints', { ...seen, silentSwitch: true })
+    setHints((h) => [...h, 'No sound? Check your silent switch.'])
+  }, [playing])
+  return hints
 }
 
 export default function App() {
   const { song, commit, preview, undo, redo, canUndo, canRedo, loadError } = useSong()
   const engine = useEngine(song)
+  const hints = useHints(engine.playing)
+  const [screen, setScreen] = useState(() => (location.hash.length > 1 ? 'studio' : 'home'))
   const [menuOpen, setMenuOpen] = useState(false)
 
+  if (screen === 'credits') return <Credits onBack={() => setScreen('home')} />
+  if (screen === 'learn-map') {
+    return (
+      <div className="home">
+        <h1>Learn</h1>
+        <p>Lessons are coming soon.</p>
+        <button type="button" className="home-link" onClick={() => setScreen('home')}>Back</button>
+      </div>
+    )
+  }
+  if (screen === 'home') {
+    return (
+      <Home
+        onLearn={() => setScreen('learn-map')}
+        onStudio={() => setScreen('studio')}
+        onCredits={() => setScreen('credits')}
+      />
+    )
+  }
   return (
     <>
-      <PlayBar
-        song={song} commit={commit} preview={preview}
-        playing={engine.playing} onToggle={engine.toggle}
-        onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo}
-        onMenu={() => setMenuOpen((o) => !o)}
-        statusText={engineStatusText(engine.status) || loadError || ''}
-        tools={null}
+      <Studio
+        song={song} commit={commit} preview={preview} engine={engine}
+        undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}
+        onMenu={() => setMenuOpen((o) => !o)} statusText={loadError || ''} hints={hints}
       />
-      <main className="studio" data-menu-open={menuOpen}>
-        <p>The studio is coming soon.</p>
-      </main>
+      {menuOpen && (
+        <Menu
+          onClose={() => setMenuOpen(false)}
+          onHome={() => { if (engine.playing) engine.toggle(); setScreen('home') }}
+          onCredits={() => { if (engine.playing) engine.toggle(); setScreen('credits') }}
+          onResetProgress={clearProgress}
+          onNewSong={() => commit(createDefaultSong)}
+        />
+      )}
     </>
   )
 }
