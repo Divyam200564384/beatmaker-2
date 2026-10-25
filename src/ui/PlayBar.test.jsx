@@ -99,11 +99,11 @@ describe('PlayBar status message', () => {
     vi.useFakeTimers()
     try {
       Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue() } })
-      setup({ statusText: 'Loading… 40%' })
+      setup({ statusText: 'Loadingâ€¦ 40%' })
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Share' })) })
       expect(screen.getByText('Link copied!')).toBeInTheDocument()
       act(() => { vi.advanceTimersByTime(3100) })
-      expect(screen.getByText('Loading… 40%')).toBeInTheDocument()
+      expect(screen.getByText('Loadingâ€¦ 40%')).toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }

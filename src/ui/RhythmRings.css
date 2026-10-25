@@ -1,0 +1,20 @@
+.rings { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+.rings-svg { width: min(100%, 22rem); height: auto; flex: 0 1 22rem; touch-action: manipulation; }
+.rings-dot { cursor: pointer; outline: none; }
+.rings-dot:focus-visible circle:first-child { stroke: var(--ink); stroke-width: 2; }
+.rings-hint { animation: rings-pulse 1s ease-in-out infinite; filter: drop-shadow(0 0 4px currentColor); }
+@keyframes rings-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .rings-hint { animation: none; } }
+.rings-controls { flex: 1 1 14rem; display: grid; gap: 0.5rem; }
+.rings-ctl {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 6px solid var(--c);
+  border-radius: 8px;
+  background: #fff;
+}
+.rings-sample { color: var(--muted); font-size: 0.85rem; }
+.rings-ctl label { display: grid; grid-template-columns: 5rem 1fr; align-items: center; gap: 0.5rem; }
+.rings-ctl input[type='range'] { min-height: 44px; width: 100%; }
+.rings-select { min-height: 44px; }
