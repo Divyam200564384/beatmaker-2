@@ -55,12 +55,12 @@ export default function PlayBar({
       a.remove()
       later(() => URL.revokeObjectURL(url), 1000)
       setMsg('')
+      onWav?.()
     } catch {
       flash("Couldn't make the WAV. Try again")
     } finally {
       setRendering(false)
     }
-    onWav?.()
   }
 
   return (

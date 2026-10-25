@@ -86,11 +86,21 @@ describe('PlayBar', () => {
     await act(async () => { resolve(new Blob(['y'])) })
     expect(screen.getByRole('button', { name: 'Save WAV' })).not.toBeDisabled()
   })
-  it('Save WAV failure shows message', async () => {
+  it('Save WAV failure shows message and does not report onWav', async () => {
     renderSongWav.mockRejectedValue(new Error('x'))
-    setup()
+    const p = setup({ onWav: vi.fn() })
     fireEvent.click(screen.getByRole('button', { name: 'Save WAV' }))
     expect(await screen.findByText('Couldn\'t make the WAV. Try again')).toBeInTheDocument()
+    expect(p.onWav).not.toHaveBeenCalled()
+  })
+  it('Save WAV success reports onWav', async () => {
+    renderSongWav.mockResolvedValue(new Blob(['x']))
+    URL.createObjectURL = vi.fn(() => 'blob:z')
+    URL.revokeObjectURL = vi.fn()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const p = setup({ onWav: vi.fn() })
+    fireEvent.click(screen.getByRole('button', { name: 'Save WAV' }))
+    await waitFor(() => expect(p.onWav).toHaveBeenCalledTimes(1))
   })
 })
 

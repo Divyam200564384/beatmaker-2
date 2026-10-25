@@ -38,10 +38,12 @@ export const CHORD_INSTRUMENTS = [
 export function allowedItems(p) {
   const done = (id) => (p.stars[id] ?? 0) >= 1;
   const kits = done(5) ? KITS.map((k) => k.id) : done(4) ? KITS.slice(0, 3).map((k) => k.id) : ["TR-808"];
-  const chordInstruments = done(9) ? CHORD_INSTRUMENTS : ["electric_piano_1"];
+  const all = INSTRUMENTS.map((i) => i.id);
+  // Level 13 unlocks every instrument for every layer, chords included.
+  const chordInstruments = done(13) ? all : done(9) ? CHORD_INSTRUMENTS : ["electric_piano_1"];
   // Brief only defines "all after level 13"; before that, offer the chord picks plus the default bass and melody voices.
   const instruments = done(13)
-    ? INSTRUMENTS.map((i) => i.id)
+    ? all
     : [...CHORD_INSTRUMENTS, "electric_bass_finger", "marimba", "music_box", "lead_1_square"];
   return { kits, chordInstruments, instruments };
 }

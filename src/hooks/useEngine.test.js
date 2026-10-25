@@ -30,6 +30,34 @@ describe('useEngine', () => {
   })
 })
 
+describe('useEngine source and stop', () => {
+  it('a source overrides the song until setSource(null) restores it', async () => {
+    const song = createDefaultSong()
+    const lesson = setTempo(song, 80)
+    const { result, rerender } = renderHook(({ s }) => useEngine(s), { initialProps: { s: song } })
+    act(() => { result.current.setSource(lesson) })
+    await act(async () => { await result.current.toggle() })
+    expect(engine.start).toHaveBeenCalledWith(lesson)
+    const next = setTempo(song, 120)
+    engine.setSong.mockClear()
+    rerender({ s: next })
+    expect(engine.setSong).not.toHaveBeenCalled()
+    act(() => { result.current.setSource(null) })
+    expect(engine.setSong).toHaveBeenLastCalledWith(next)
+  })
+
+  it('stop() stops the engine and resets playing and step', async () => {
+    const { result } = renderHook(() => useEngine(createDefaultSong()))
+    await act(async () => { await result.current.toggle() })
+    act(() => { createEngine.mock.calls[0][0].onStep(5) })
+    expect(result.current.step).toBe(5)
+    act(() => { result.current.stop() })
+    expect(engine.stop).toHaveBeenCalled()
+    expect(result.current.playing).toBe(false)
+    expect(result.current.step).toBe(-1)
+  })
+})
+
 describe('useEngine retry', () => {
   it('retry forwards the layer to the engine', () => {
     engine.retry = vi.fn()

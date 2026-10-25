@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types -- small learn component */
 
-export default function Goals({ goals, met, revealed, bonus, bonusMet, selfChecked, onHint, onSelfCheck }) {
-  const canHint = met.some((m) => !m)
+export default function Goals({ goals, met, revealed, bonus, bonusMet, selfChecked, hintOff = false, onHint, onSelfCheck }) {
+  const canHint = !hintOff && met.some((m) => !m)
   return (
     <section className="goals" aria-label="Goals">
       <ul className="goals-list">

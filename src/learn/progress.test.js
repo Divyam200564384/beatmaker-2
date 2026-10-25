@@ -47,6 +47,9 @@ describe("progress", () => {
       "electric_piano_1", "acoustic_grand_piano", "pad_2_warm", "string_ensemble_1", "acoustic_guitar_nylon",
     ]);
     expect(allowedItems(done(13)).instruments).toEqual(INSTRUMENTS.map((i) => i.id));
+    expect(allowedItems(done(9, 13)).chordInstruments).toEqual(INSTRUMENTS.map((i) => i.id));
+    expect(allowedItems(done(9, 13)).chordInstruments).toHaveLength(129);
+    expect(allowedItems(done(9, 12)).chordInstruments).toHaveLength(5);
     expect(allowedItems(done(12)).instruments).toEqual(expect.arrayContaining(["music_box", "lead_1_square"]));
     expect(allowedItems(done(12)).instruments.length).toBeLessThan(INSTRUMENTS.length);
   });

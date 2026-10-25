@@ -23,7 +23,10 @@ function lessonOptions(progress, unlocks) {
     if (u === 'kits:3') kits = union(kits, KITS.slice(0, 3).map((k) => k.id))
     else if (u === 'kits:all') kits = KITS.map((k) => k.id)
     else if (u === 'chord-instruments:5') chords = union(chords, CHORD_INSTRUMENTS)
-    else if (u === 'instruments:all') inst = INSTRUMENTS.map((i) => i.id)
+    else if (u === 'instruments:all') {
+      inst = INSTRUMENTS.map((i) => i.id)
+      chords = inst
+    }
   }
   return { drums: kits, chords, bass: inst, melody: inst }
 }
@@ -32,7 +35,7 @@ const QUIZ_LETTERS = 'ABCD'
 
 export default function Lesson({ level, progress, onDone, onExit, engine }) {
   const [startSong] = useState(() => applyPatch(createEmptySong(), level.startPatch))
-  const { song, commit: rawCommit, preview: rawPreview, undo, redo, canUndo, canRedo } = useSong({ initial: startSong, persist: false })
+  const { song, commit: rawCommit, preview: rawPreview, undo: rawUndo, redo: rawRedo, canUndo, canRedo } = useSong({ initial: startSong, persist: false })
   const [actions, setActions] = useState([])
   const [revealed, setRevealed] = useState([])
   const [usedHint, setUsedHint] = useState(false)
@@ -40,6 +43,7 @@ export default function Lesson({ level, progress, onDone, onExit, engine }) {
   const [quizMsg, setQuizMsg] = useState('')
   const [completed, setCompleted] = useState(false)
   const [bonusSeen, setBonusSeen] = useState(false)
+  const [recordedStars, setRecordedStars] = useState(0)
 
   const tools = useMemo(() => new Set(level.tools), [level])
   const options = useMemo(() => lessonOptions(progress, level.unlocks), [progress, level])
@@ -57,7 +61,10 @@ export default function Lesson({ level, progress, onDone, onExit, engine }) {
   useEffect(() => { if (bonusNow) setBonusSeen(true) }, [bonusNow])
   const done = completed || allMet
   const bonusMet = bonusSeen || bonusNow
-  const stars = starsFor({ goalsMet: done, usedHint, bonusMet })
+  // Stars recorded at completion never drop; a later bonus can still raise them (Hint is off once done).
+  const liveStars = starsFor({ goalsMet: done, usedHint, bonusMet })
+  useEffect(() => { if (done) setRecordedStars((r) => Math.max(r, liveStars)) }, [done, liveStars])
+  const stars = Math.max(recordedStars, liveStars)
 
   // The shared engine plays the lesson song, or the compare song being listened to.
   const { setSource, stop } = engine
@@ -71,6 +78,8 @@ export default function Lesson({ level, progress, onDone, onExit, engine }) {
   // Any edit leaves compare mode so the user hears their own song again.
   const commit = useCallback((fn) => { setComparing(null); rawCommit(fn) }, [rawCommit])
   const preview = useCallback((fn) => { setComparing(null); rawPreview(fn) }, [rawPreview])
+  const undo = useCallback(() => { setComparing(null); rawUndo() }, [rawUndo])
+  const redo = useCallback(() => { setComparing(null); rawRedo() }, [rawRedo])
 
   const onCompare = (i) => {
     if (comparing === i) {
@@ -97,7 +106,7 @@ export default function Lesson({ level, progress, onDone, onExit, engine }) {
 
   const onHint = () => {
     const i = met.findIndex((m) => !m)
-    if (i < 0) return
+    if (i < 0 || done) return
     setUsedHint(true)
     setRevealed((r) => (r.includes(i) ? r : [...r, i]))
   }
@@ -163,7 +172,7 @@ export default function Lesson({ level, progress, onDone, onExit, engine }) {
 
       <Goals
         goals={level.goals} met={met} revealed={revealed} bonus={level.bonus} bonusMet={bonusMet}
-        selfChecked={actions.includes('self-check')} onHint={onHint} onSelfCheck={() => onAction('self-check')}
+        selfChecked={actions.includes('self-check')} hintOff={done} onHint={onHint} onSelfCheck={() => onAction('self-check')}
       />
 
       {done && (

@@ -114,6 +114,35 @@ describe('Lesson', () => {
     expect(location.hash).toBe('')
   })
 
+  it('level 13 chord picker offers every instrument', () => {
+    lesson(LEVELS[12])
+    const chords = screen.getByRole('heading', { name: 'Chords' }).closest('header')
+    expect(within(chords).getByLabelText('Instrument').querySelectorAll('option')).toHaveLength(129)
+  })
+
+  it('earned stars stay after a goal becomes unmet again, and Hint stays off', () => {
+    lesson(LEVELS[0])
+    setHits('Kick', 4)
+    expect(within(celebration()).getByLabelText('2 stars')).toBeInTheDocument()
+    setHits('Kick', 3)
+    expect(goal('Give the kick 4 even hits')).toHaveTextContent('⬜')
+    expect(screen.getByRole('button', { name: 'Hint' })).toBeDisabled()
+    expect(within(celebration()).getByLabelText('2 stars')).toBeInTheDocument()
+  })
+
+  it('undo leaves compare mode and plays the lesson song again', () => {
+    const engine = { ...makeEngine(), playing: true }
+    lesson({ ...LEVELS[1], tools: [...LEVELS[1].tools, 'undo'] }, { engine })
+    fireEvent.click(screen.getByRole('button', { name: 'Snare step 5, off' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Kick alone' }))
+    expect(screen.getByRole('button', { name: 'Kick alone' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.getByRole('button', { name: 'Kick alone' })).toHaveAttribute('aria-pressed', 'false')
+    const src = engine.setSource.mock.calls.at(-1)[0]
+    expect(src.drums.rings.snare.pattern[4]).toBe(false)
+    expect(src.drums.rings.kick.pattern.some(Boolean)).toBe(true)
+  })
+
   it('exit calls onExit and leaving stops playback', () => {
     const engine = makeEngine()
     const onExit = vi.fn()
