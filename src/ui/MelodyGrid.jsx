@@ -9,6 +9,17 @@ const ROWS = 11
 const MOVES = [-2, -1, -1, 0, 1, 1, 2]
 const noteName = (m) => NOTE_NAMES[m % 12] + (Math.floor(m / 12) - 1)
 
+// Replays cell writes onto a song. Changing a cell's row un-ties a following cell that was tied to it.
+function applyWrites(song, writes) {
+  return writes.reduce((acc, { col, row, tie }) => {
+    let next = setMelodyCell(acc, col, row, tie)
+    const old = acc.melody.cells[col]
+    const after = acc.melody.cells[col + 1]
+    if (old.row !== row && after?.tie) next = setMelodyCell(next, col + 1, after.row, false)
+    return next
+  }, song)
+}
+
 export default function MelodyGrid({ song, commit, preview, onSound, step = null, tools = null, random = Math.random }) {
   const has = (id) => !tools || tools.has(id)
   const canvasRef = useRef(null)
@@ -74,18 +85,28 @@ export default function MelodyGrid({ song, commit, preview, onSound, step = null
     const hit = st && cellAt(e)
     if (!hit) return
     if (hit.col === st.prevCol && hit.row === st.prevRow) return
-    const row = erase ? -1 : hit.row
-    const tie = !erase && st.prevCol != null && hit.col === st.prevCol + 1 && hit.row === st.prevRow
-    st.song = setMelodyCell(st.song, hit.col, row, tie)
+    // Fast swipes skip columns: walk each one, interpolating the row.
+    const from = st.prevCol
+    const n = from == null ? 1 : Math.max(1, Math.abs(hit.col - from))
+    const startRow = st.prevRow
+    const dir = from != null && hit.col < from ? -1 : 1
+    for (let i = 1; i <= n; i++) {
+      const col = from == null ? hit.col : n === 1 ? hit.col : from + dir * i
+      const vis = from == null || n === 1 ? hit.row : Math.round(startRow + ((hit.row - startRow) * i) / n)
+      const row = erase ? -1 : vis
+      const tie = !erase && st.last != null && col === st.last.col + 1 && vis === st.last.vis
+      st.writes.push({ col, row, tie })
+      st.last = { col, vis }
+    }
     st.prevCol = hit.col
     st.prevRow = hit.row
-    const snap = st.song
-    preview(() => snap)
+    const writes = st.writes.slice()
+    preview((s) => applyWrites(s, writes))
     if (!erase) onSound?.('melody', rows[hit.row])
   }
 
   const down = (e) => {
-    stroke.current = { song, prevCol: null, prevRow: null }
+    stroke.current = { writes: [], last: null, prevCol: null, prevRow: null }
     canvasRef.current.setPointerCapture?.(e.pointerId)
     paint(e)
   }
@@ -94,9 +115,9 @@ export default function MelodyGrid({ song, commit, preview, onSound, step = null
     if (!st) return
     stroke.current = null
     canvasRef.current?.releasePointerCapture?.(e.pointerId)
-    if (st.prevCol == null) return
-    const final = st.song
-    commit(() => final)
+    if (!st.writes.length) return
+    const writes = st.writes
+    commit((s) => applyWrites(s, writes))
   }
 
   const idea = () => {
@@ -112,7 +133,7 @@ export default function MelodyGrid({ song, commit, preview, onSound, step = null
 
   const choose = (col, value) => {
     const row = value === '' ? -1 : Number(value)
-    commit((s) => setMelodyCell(s, col, row, false))
+    commit((s) => applyWrites(s, [{ col, row, tie: false }]))
     if (row >= 0) onSound?.('melody', rows[row])
   }
 

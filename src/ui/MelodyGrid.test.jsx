@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import MelodyGrid from './MelodyGrid.jsx'
@@ -82,6 +83,55 @@ describe('MelodyGrid', () => {
     expect(p.commit).toHaveBeenCalledTimes(1)
     expect(p.commit.mock.calls[0][0](p.song).melody.cells[1]).toEqual({ row: 3, tie: false })
     expect(p.onSound).toHaveBeenCalled()
+  })
+
+  it('a fast swipe from col 0 to col 3 fills skipped columns as a held note', () => {
+    const { p, canvas } = setup()
+    fireEvent.pointerDown(canvas, at(0, 0))
+    fireEvent.pointerMove(canvas, at(3, 0))
+    fireEvent.pointerUp(canvas, at(3, 0))
+    expect(p.commit).toHaveBeenCalledTimes(1)
+    const cells = p.commit.mock.calls[0][0](p.song).melody.cells
+    expect(cells.slice(0, 4).map((c) => c.row)).toEqual([0, 0, 0, 0])
+    expect(cells.slice(0, 4).map((c) => c.tie)).toEqual([false, true, true, true])
+  })
+
+  it('a fast diagonal swipe interpolates rows and sounds only the landing cell', () => {
+    const { p, canvas } = setup()
+    fireEvent.pointerDown(canvas, at(0, 0))
+    p.onSound.mockClear()
+    fireEvent.pointerMove(canvas, at(4, 4))
+    fireEvent.pointerUp(canvas, at(4, 4))
+    const cells = p.commit.mock.calls[0][0](p.song).melody.cells
+    expect(cells.slice(0, 5).map((c) => c.row)).toEqual([0, 1, 2, 3, 4])
+    expect(p.onSound).toHaveBeenCalledTimes(1)
+  })
+
+  it('changes made to the song mid-stroke survive the commit', () => {
+    const { p, canvas } = setup()
+    fireEvent.pointerDown(canvas, at(0, 2))
+    fireEvent.pointerUp(canvas, at(0, 2))
+    const changed = { ...p.song, tempo: 120 }
+    const out = p.commit.mock.calls[0][0](changed)
+    expect(out.tempo).toBe(120)
+    expect(out.melody.cells[0].row).toBe(2)
+  })
+
+  it('changing a cell row un-ties the following tied cell', () => {
+    const song = createDefaultSong()
+    song.melody.cells[0] = { row: 2, tie: false }
+    song.melody.cells[1] = { row: 2, tie: true }
+    const { p, canvas } = setup({ song })
+    fireEvent.pointerDown(canvas, at(0, 5))
+    fireEvent.pointerUp(canvas, at(0, 5))
+    const cells = p.commit.mock.calls[0][0](song).melody.cells
+    expect(cells[0].row).toBe(5)
+    expect(cells[1]).toEqual({ row: 2, tie: false })
+  })
+
+  it('the hidden selects become visible on focus', () => {
+    const css = readFileSync('src/ui/LayerPanels.css', 'utf8')
+    expect(css).toMatch(/\.lp-sr:focus-within/)
   })
 
   it('hides buttons without melodyTools', () => {
