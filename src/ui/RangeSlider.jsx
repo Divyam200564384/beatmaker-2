@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 
 // Previews on every input event; commits once on release (native `change`).
 // React's onChange fires on each input tick for ranges, so it only previews.
-export default function RangeSlider({ value, min, max, step, onPreview, onCommit, label, ...rest }) {
+export default function RangeSlider({ value, min, max, step, onPreview, onCommit, label, style, ...rest }) {
   const ref = useRef(null)
   const commitRef = useRef(onCommit)
   commitRef.current = onCommit
@@ -15,11 +15,14 @@ export default function RangeSlider({ value, min, max, step, onPreview, onCommit
     return () => el.removeEventListener('change', handler)
   }, [])
 
+  // --fill lets the CSS paint the part of the track left of the thumb.
+  const fill = max > min ? ((Number(value) - min) / (max - min)) * 100 : 0
   return (
     <input
       {...rest}
       ref={ref}
       type="range"
+      style={{ ...style, '--fill': `${fill}%` }}
       aria-label={label}
       min={min}
       max={max}

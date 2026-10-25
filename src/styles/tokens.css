@@ -1,10 +1,15 @@
 :root {
   --ink: #1d2340;
   --paper: #fffaf2;
+  --page: #f4efe6;
   --line: #e9dcc8;
-  --muted: #6b6f86;
+  /* #5c6078 keeps >= 5.3:1 on --page, --paper and white (the old #6b6f86 fell to 4.3:1 on --page). */
+  --muted: #5c6078;
   --drums: #e4572e;
   --chords: #8b5cf6;
   --bass: #3b82f6;
   --melody: #10b981;
+  --gold: #d4a400;
+  --radius: 14px;
+  --shadow: 0 6px 18px rgba(29, 35, 64, 0.08);
 }

@@ -1,23 +1,50 @@
-.home { max-width: 56rem; margin: 0 auto; padding: 2rem 1rem; text-align: center; }
-.home-title { margin: 0; font-size: 2.5rem; }
-.home-sub { color: var(--muted); }
-.home-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin: 1.5rem 0; }
-.home-card { border: 2px solid var(--line); border-radius: 16px; background: #fff; padding: 1.25rem; }
-.home-card h2 { margin: 0 0 0.5rem; }
+.home { max-width: 60rem; margin: 0 auto; padding: 2.5rem 1rem; text-align: center; }
+.home-title { margin: 0; font-size: clamp(2.25rem, 7vw, 3.25rem); letter-spacing: -0.01em; }
+.home-sub { margin: 0.25rem 0 0; color: var(--muted); font-size: 1.1rem; }
+.home-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin: 2rem 0 1.5rem; }
+.home-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border-radius: 20px;
+  background: #fff;
+  color: #fff;
+  text-align: left;
+  box-shadow: var(--shadow);
+}
+/* Deeper takes on the prototype gradients so white text keeps >= 5:1. */
+.home-card--learn { background: linear-gradient(135deg, #c2410c, #b93a1a); }
+.home-card--free { background: linear-gradient(135deg, #6d28d9, #1d4ed8); }
+.home-card h2 { margin: 0; font-size: 1.6rem; }
+.home-card p { margin: 0 0 0.5rem; font-size: 1.05rem; flex: 1; }
 .home-btn, .home-link {
   min-height: 44px;
   min-width: 44px;
-  padding: 0 1.25rem;
-  border-radius: 12px;
+  padding: 0 1.4rem;
+  border-radius: 999px;
   border: 2px solid var(--ink);
   background: var(--ink);
-  color: var(--paper);
+  color: #fff;
   font: inherit;
+  font-weight: 700;
   cursor: pointer;
 }
-.home-link { background: transparent; color: var(--ink); border-color: var(--line); }
-.credits { text-align: left; }
-.credits-list { line-height: 1.8; }
+.home-card .home-btn { background: #fff; color: var(--ink); border-color: #fff; }
+.home-btn:hover { filter: brightness(1.08); }
+.home-link { background: var(--paper); color: var(--ink); border-color: var(--line); }
+.home-link:hover { border-color: var(--ink); }
+.credits { text-align: left; max-width: 44rem; }
+.credits h1 { margin: 1rem 0 0.5rem; font-size: 2rem; }
+.credits-list {
+  margin: 0;
+  padding: 1rem 1.25rem 1rem 2.25rem;
+  line-height: 1.8;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
 .menu {
   position: fixed;
   top: 4rem;
@@ -26,11 +53,12 @@
   display: flex;
   flex-direction: column;
   min-width: 14rem;
+  padding: 0.35rem;
   border: 2px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
+  border-radius: var(--radius);
+  background: var(--paper);
   box-shadow: 0 8px 24px rgba(29, 35, 64, 0.2);
   overflow: hidden;
 }
-.menu-item { min-height: 44px; padding: 0 1rem; border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer; }
-.menu-item:hover { background: var(--paper); }
+.menu-item { min-height: 44px; padding: 0 1rem; border: 0; border-radius: 10px; background: transparent; font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.menu-item:hover { background: var(--page); }

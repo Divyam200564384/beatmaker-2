@@ -11,8 +11,9 @@ const RINGS = [
 ]
 const PERCS = [['openhat', 'Open hat'], ['tom', 'Tom'], ['cowbell', 'Cowbell'], ['rim', 'Rim']]
 // Invisible touch circle (SVG units). The fixed ring radii (92/72/52/32) make a full 44px target
-// impossible on a 375px phone: 12 units is ~37px wide, and radially only ~31px fits between rings,
-// so hit circles on neighbouring rings and the inner ring's neighbours overlap. Accepted compromise.
+// impossible on a 375px phone: the 24-unit hit circle is ~39px wide there, and radially only ~32px fits between rings,
+// so hit circles on neighbouring rings and the inner ring's neighbours overlap. Accepted compromise;
+// the viewBox is trimmed to the outer hit circles (±106) and phones let the SVG span the panel.
 const HIT_R = 12
 const angle = (i) => (i / 16) * 2 * Math.PI - Math.PI / 2
 const pos = (r, i) => [Math.cos(angle(i)) * r, Math.sin(angle(i)) * r]
@@ -33,7 +34,7 @@ export default function RhythmRings({ song, commit, preview, onSound, step = nul
 
   return (
     <div className="rings">
-      <svg className="rings-svg" viewBox="-110 -110 220 220" role="group" aria-label="Rhythm rings">
+      <svg className="rings-svg" viewBox="-106 -106 212 212" role="group" aria-label="Rhythm rings">
         {visible.map((ring) => (
           <g key={ring.id}>
             <circle r={ring.r} fill="none" stroke="#ece4d6" strokeWidth="2" />

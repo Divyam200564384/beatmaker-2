@@ -35,7 +35,7 @@ endless ways.
    laptop.
 2. Nothing a user makes can be off-beat or out of key.
 3. By level 15 the user has made and shared a full 4-layer loop.
-4. In Free play, every tool and all ~128 instruments and ~11 drum kits are
+4. In Free play, every tool and all ~128 instruments and 10 drum kits are
    available at once.
 5. The user does a listening check and judges that it sounds good.
 
@@ -85,11 +85,12 @@ Sounds come from smplr 1.1.0 (MIT). Its samples are hosted on GitHub Pages
 | MusyngKite General MIDI soundfont (128 instruments) | Chords, bass and melody instruments | CC BY-SA 3.0 | Credits screen |
 | FluidR3_GM soundfont | Fallback if MusyngKite fails to load | CC BY 3.0 | Credits screen |
 | Splendid Grand Piano (AKAI Steinway samples) | "Grand piano" option | Public domain | Credit as courtesy |
-| smpldsnds drum-machines: TR-808, 808-mini, LM-2, Roland CR-8000, Casio RZ-1, Casio SK-1, MFB-512, Micro-Rhythmer-12, Sequential Drumtraks, Yamaha MR-10 | Drum kits | Public domain | Credit as courtesy |
+| smpldsnds drum-machines: TR-808, 808-mini, LM-2, Roland CR-8000, Casio RZ-1, Casio SK-1, MFB-512, Sequential Drumtraks, Yamaha MR-10 | Drum kits | Public domain | Credit as courtesy |
 | Sonic Pi drum samples | One extra "Sonic Pi" kit | CC0 | Credit as courtesy |
 
-- **Excluded:** DrumAbuse packs, because their licence is unclear, and the
-  Hydrogen samples, which are GPL.
+- **Excluded:** DrumAbuse packs, because their licence is unclear, the
+  Hydrogen samples, which are GPL, and the Micro-Rhythmer-12 kit, which has
+  no kick.
 - **Instrument picker:** the 128 instruments are grouped as Keys, Mallets,
   Organs, Guitars, Bass, Strings, Brass, Reeds and Winds, Synth leads,
   Synth pads, Choir and voice, and World. Groups follow the General MIDI

@@ -58,14 +58,14 @@ export default function MelodyGrid({ song, commit, preview, onSound, step = null
     for (let r = 0; r <= ROWS; r++) { ctx.beginPath(); ctx.moveTo(0, r * ch); ctx.lineTo(w, r * ch); ctx.stroke() }
     for (let c = 0; c <= COLS; c++) { ctx.beginPath(); ctx.moveTo(c * cw, 0); ctx.lineTo(c * cw, h); ctx.stroke() }
     if (curCol >= 0) { ctx.fillStyle = 'rgba(29,35,64,.12)'; ctx.fillRect(curCol * cw, 0, cw, h) }
-    ctx.fillStyle = '#7b4bd1'
+    ctx.fillStyle = '#059669'
     cells.forEach((cell, c) => {
       if (cell.row < 0) return
       const y = (ROWS - 1 - cell.row) * ch
       ctx.fillRect(c * cw + (cell.tie ? 0 : 1), y + 1, cw - (cell.tie ? 0 : 1), ch - 2)
     })
     ctx.fillStyle = '#1d2340'
-    ctx.font = `${Math.max(10, ch * 0.5)}px sans-serif`
+    ctx.font = `${Math.max(10, ch * 0.5)}px 'Baloo 2', sans-serif`
     song.chords.prog.forEach((d, bar) => {
       if (d) ctx.fillText(chordName(d, song.key), bar * 8 * cw + 4, h - 3)
     })

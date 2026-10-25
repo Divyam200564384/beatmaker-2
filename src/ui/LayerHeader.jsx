@@ -6,7 +6,7 @@ import './LayerHeader.css'
 
 const show = (tools, id) => !tools || tools.has(id)
 
-export default function LayerHeader({ layer, title, song, commit, preview, options = null, tools = null, status, onRetry, onAction }) {
+export default function LayerHeader({ layer, title, icon, song, commit, preview, options = null, tools = null, status, onRetry, onAction }) {
   const isDrums = layer === 'drums'
   const mix = song[layer].mix
   // The current choice always stays listed so the controlled select never shows a wrong value.
@@ -56,38 +56,8 @@ export default function LayerHeader({ layer, title, song, commit, preview, optio
 
   return (
     <header className="layer-header" style={{ '--layer-color': `var(--${layer})` }}>
-      <h3 className="layer-header-title">{title}</h3>
+      <h3 className="layer-header-title">{icon && <span aria-hidden="true">{icon} </span>}{title}</h3>
       {picker}
-      {showMixer && (
-        <label className="layer-header-field">
-          <span>Volume</span>
-          <RangeSlider
-            label="Volume" min={0} max={100} value={mix.volume}
-            onPreview={(v) => preview((s) => setMix(s, layer, { volume: v }))}
-            onCommit={(v) => setMixPart({ volume: v }, 'volume')}
-          />
-        </label>
-      )}
-      <button
-        type="button" className="layer-header-btn" aria-pressed={mix.mute}
-        onClick={() => setMixPart({ mute: !mix.mute }, `${mix.mute ? 'unmute' : 'mute'}:${layer}`)}
-      >Mute</button>
-      {showMixer && (
-        <button
-          type="button" className="layer-header-btn" aria-pressed={mix.solo}
-          onClick={() => setMixPart({ solo: !mix.solo }, 'solo')}
-        >Solo</button>
-      )}
-      {showMixer && (
-        <label className="layer-header-field">
-          <span>Space</span>
-          <RangeSlider
-            label="Space" min={0} max={100} value={mix.space}
-            onPreview={(v) => preview((s) => setMix(s, layer, { space: v }))}
-            onCommit={(v) => setMixPart({ space: v }, 'space')}
-          />
-        </label>
-      )}
       {status?.state === 'loading' && (
         <span className="layer-header-status" role="status">
           {`Loading… ${Math.round((status.progress ?? 0) * 100)}%`}
@@ -99,6 +69,38 @@ export default function LayerHeader({ layer, title, song, commit, preview, optio
           <button type="button" className="layer-header-btn" onClick={onRetry}>Retry</button>
         </span>
       )}
+      <div className={`layer-header-mix${showMixer ? ' full' : ''}`}>
+        {showMixer && (
+          <label className="layer-header-field">
+            <span>Volume</span>
+            <RangeSlider
+              label="Volume" min={0} max={100} value={mix.volume}
+              onPreview={(v) => preview((s) => setMix(s, layer, { volume: v }))}
+              onCommit={(v) => setMixPart({ volume: v }, 'volume')}
+            />
+          </label>
+        )}
+        <button
+          type="button" className="layer-header-btn" aria-pressed={mix.mute}
+          onClick={() => setMixPart({ mute: !mix.mute }, `${mix.mute ? 'unmute' : 'mute'}:${layer}`)}
+        >Mute</button>
+        {showMixer && (
+          <button
+            type="button" className="layer-header-btn" aria-pressed={mix.solo}
+            onClick={() => setMixPart({ solo: !mix.solo }, 'solo')}
+          >Solo</button>
+        )}
+        {showMixer && (
+          <label className="layer-header-field">
+            <span>Space</span>
+            <RangeSlider
+              label="Space" min={0} max={100} value={mix.space}
+              onPreview={(v) => preview((s) => setMix(s, layer, { space: v }))}
+              onCommit={(v) => setMixPart({ space: v }, 'space')}
+            />
+          </label>
+        )}
+      </div>
     </header>
   )
 }

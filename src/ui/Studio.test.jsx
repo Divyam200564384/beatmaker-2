@@ -34,6 +34,25 @@ describe('Studio', () => {
     expect(screen.queryByRole('heading', { name: 'Drums' })).toBeNull()
   })
 
+  it('moves between tabs with the arrow keys, Home and End', () => {
+    window.innerWidth = 375
+    render(<Studio {...base()} />)
+    const tab = (n) => screen.getByRole('tab', { name: n })
+    expect(tab('Drums')).toHaveAttribute('tabindex', '0')
+    expect(tab('Chords')).toHaveAttribute('tabindex', '-1')
+    fireEvent.keyDown(tab('Drums'), { key: 'ArrowRight' })
+    expect(tab('Chords')).toHaveAttribute('aria-selected', 'true')
+    expect(tab('Chords')).toHaveFocus()
+    expect(screen.getByRole('heading', { name: 'Chords' })).toBeInTheDocument()
+    fireEvent.keyDown(tab('Chords'), { key: 'ArrowLeft' })
+    fireEvent.keyDown(tab('Drums'), { key: 'ArrowLeft' })
+    expect(tab('Melody')).toHaveAttribute('aria-selected', 'true')
+    fireEvent.keyDown(tab('Melody'), { key: 'Home' })
+    expect(tab('Drums')).toHaveFocus()
+    fireEvent.keyDown(tab('Drums'), { key: 'End' })
+    expect(tab('Melody')).toHaveFocus()
+  })
+
   it('reacts to a resize', () => {
     render(<Studio {...base()} />)
     setWidth(375)
@@ -42,11 +61,18 @@ describe('Studio', () => {
 
   it('hides layers whose tools are all filtered out', () => {
     window.innerWidth = 375
-    render(<Studio {...base()} tools={new Set(['kick'])} />)
-    expect(screen.getAllByRole('tab')).toHaveLength(1)
+    render(<Studio {...base()} tools={new Set(['kick', 'melody'])} />)
+    expect(screen.getAllByRole('tab')).toHaveLength(2)
     expect(screen.queryByRole('tab', { name: /Chords/ })).toBeNull()
     expect(screen.queryByRole('tab', { name: /Bass/ })).toBeNull()
-    expect(screen.queryByRole('tab', { name: /Melody/ })).toBeNull()
+  })
+
+  it('drops the tab bar on a phone when only one layer is left', () => {
+    window.innerWidth = 375
+    render(<Studio {...base()} tools={new Set(['kick'])} />)
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.queryByRole('tabpanel')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Drums' })).toBeInTheDocument()
   })
 
   it('Retry calls the engine retry for that layer', () => {
@@ -62,6 +88,16 @@ describe('Studio', () => {
     render(<Studio {...base()} engine={eng} statusText="Bad link" />)
     expect(screen.getAllByRole('status').some((e) => /Loading… 50%/.test(e.textContent))).toBe(true)
     expect(screen.queryByText('Bad link')).toBeNull()
+  })
+
+  it('says when every loaded instrument is ready, after any load error', () => {
+    const ready = (layer) => ({ layer, state: 'ready' })
+    const status = { drums: ready('drums'), chords: ready('chords'), bass: ready('bass'), melody: ready('melody') }
+    const { rerender } = render(<Studio {...base()} engine={{ ...engine, status }} />)
+    expect(screen.getAllByRole('status').some((e) => e.textContent === 'All instruments ready')).toBe(true)
+    rerender(<Studio {...base()} engine={{ ...engine, status }} statusText="Bad link" />)
+    expect(screen.getByText('Bad link')).toBeInTheDocument()
+    expect(screen.queryByText('All instruments ready')).toBeNull()
   })
 
   it('marks the Menu button expanded', () => {

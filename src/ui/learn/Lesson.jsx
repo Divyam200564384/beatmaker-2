@@ -178,7 +178,10 @@ export default function Lesson({ level, progress, onDone, onExit, engine }) {
       {done && (
         <section className="lesson-done" role="region" aria-label="Level complete">
           <h2>🎉 Level complete!</h2>
-          <p className="lesson-stars" aria-label={`${stars} ${stars === 1 ? 'star' : 'stars'}`}>{'⭐'.repeat(stars)}</p>
+          <p className="lesson-stars">
+            <span aria-hidden="true">{'⭐'.repeat(stars)}</span>
+            <span className="visually-hidden">{`${stars} ${stars === 1 ? 'star' : 'stars'}`}</span>
+          </p>
           <button type="button" className="home-btn" onClick={() => onDone(stars)}>
             {level.id === 15 ? 'Finish ▶' : 'Next level ▶'}
           </button>

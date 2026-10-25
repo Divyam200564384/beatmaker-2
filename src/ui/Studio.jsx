@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types -- composed screen; props documented in the Task 11 brief */
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import PlayBar from './PlayBar.jsx'
 import LayerHeader from './LayerHeader.jsx'
 import RhythmRings from './RhythmRings.jsx'
@@ -28,6 +28,11 @@ function engineStatusText(status = {}) {
   return ''
 }
 
+function readyText(status = {}) {
+  const entries = Object.values(status)
+  return entries.length && entries.every((s) => s.state === 'ready') ? 'All instruments ready' : ''
+}
+
 export default function Studio({
   song, commit, preview, engine, tools = null, options = null, hints = [],
   undo, redo, canUndo = false, canRedo = false, onMenu, menuOpen = false, statusText = '',
@@ -35,8 +40,21 @@ export default function Studio({
 }) {
   const wide = useMediaQuery('(min-width: 900px)')
   const [tab, setTab] = useState('drums')
+  const tabRefs = useRef({})
   const layers = LAYERS.filter((l) => tools === null || l.tools.some((t) => tools.has(t)))
   const active = layers.find((l) => l.id === tab) ?? layers[0]
+  // A phone shows tabs only when there is more than one layer to switch between.
+  const tabbed = !wide && layers.length > 1
+  // Roving tabindex: arrows, Home and End move the selection and the focus together.
+  const onTabKey = (e) => {
+    const i = layers.findIndex((l) => l.id === active?.id)
+    const last = layers.length - 1
+    const next = { ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i === 0 ? last : i - 1, Home: 0, End: last }[e.key]
+    if (next === undefined) return
+    e.preventDefault()
+    setTab(layers[next].id)
+    tabRefs.current[layers[next].id]?.focus()
+  }
   const step = engine.step >= 0 ? engine.step : null
   const onSound = (layer, n) => {
     if (Array.isArray(n)) n.forEach((x) => engine.preview(layer, x))
@@ -53,9 +71,13 @@ export default function Studio({
     else if (l.id === 'bass') body = <BassPanel song={song} commit={commit} onAction={onAction} />
     else body = <MelodyGrid song={song} commit={commit} preview={preview} onSound={onSound} step={step} tools={tools} />
     return (
-      <section key={l.id} className="studio-panel" id={`panel-${l.id}`} role={wide ? undefined : 'tabpanel'} aria-label={wide ? undefined : l.title}>
+      <section
+        key={l.id} className="studio-panel" id={`panel-${l.id}`} data-state={engine.status?.[l.id]?.state ?? 'idle'}
+        style={{ '--layer-color': `var(--${l.id})` }}
+        role={tabbed ? 'tabpanel' : undefined} aria-label={tabbed ? l.title : undefined}
+      >
         <LayerHeader
-          layer={l.id} title={l.title} song={song} commit={commit} preview={preview}
+          layer={l.id} title={l.title} icon={l.icon} song={song} commit={commit} preview={preview}
           options={optionsFor(l.id)} tools={tools} status={engine.status?.[l.id]} onRetry={() => engine.retry?.(l.id)}
           onAction={onAction}
         />
@@ -70,20 +92,22 @@ export default function Studio({
         song={song} commit={commit} preview={preview}
         playing={engine.playing} onToggle={engine.toggle}
         onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo}
-        onMenu={onMenu} menuOpen={menuOpen} statusText={engineStatusText(engine.status) || statusText} tools={tools}
+        onMenu={onMenu} menuOpen={menuOpen} statusText={engineStatusText(engine.status) || statusText || readyText(engine.status)} tools={tools}
         onShare={() => onAction?.('share')} onWav={() => onAction?.('wav')} shareUrl={shareUrl}
       />
       {hints.map((h) => <p key={h} className="studio-hint" role="note">{h}</p>)}
-      <main className={`studio${wide ? ' studio-grid' : ''}`}>
+      <main className={`studio${wide ? ' studio-grid' : ''}${tabbed ? ' studio-tabbed' : ''}`}>
         {wide ? layers.map(panel) : active && panel(active)}
       </main>
-      {!wide && (
-        <div className="studio-tabs" role="tablist" aria-label="Layers">
+      {tabbed && (
+        <div className="studio-tabs" role="tablist" aria-label="Layers" onKeyDown={onTabKey}>
           {layers.map((l) => (
             <button
               key={l.id} type="button" role="tab" aria-label={l.title}
+              ref={(el) => { tabRefs.current[l.id] = el }}
               aria-selected={l.id === active?.id} aria-controls={`panel-${l.id}`}
-              className="studio-tab" onClick={() => setTab(l.id)}
+              tabIndex={l.id === active?.id ? 0 : -1}
+              className="studio-tab" style={{ '--layer-color': `var(--${l.id})` }} onClick={() => setTab(l.id)}
             ><span aria-hidden="true">{l.icon}</span></button>
           ))}
         </div>

@@ -13,6 +13,14 @@ const lesson = (level, props = {}) => render(
 const goal = (text) => screen.getByText(text).closest('li')
 const setHits = (ring, n) => fireEvent.change(screen.getByLabelText(`${ring} hits`), { target: { value: String(n) } })
 const celebration = () => screen.getByRole('region', { name: 'Level complete' })
+// Stars are read out as visually hidden text; the emoji row itself is hidden from screen readers.
+const expectStars = (n, emoji) => {
+  const text = within(celebration()).getByText(`${n} ${n === 1 ? 'star' : 'stars'}`)
+  expect(text).toHaveClass('visually-hidden')
+  const row = text.closest('p')
+  expect(row).not.toHaveAttribute('aria-label')
+  expect(row.querySelector('[aria-hidden="true"]')).toHaveTextContent(new RegExp(`^${emoji}$`))
+}
 
 beforeEach(() => {
   localStorage.clear()
@@ -37,7 +45,7 @@ describe('Lesson', () => {
     expect(screen.queryByRole('region', { name: 'Level complete' })).toBeNull()
     setHits('Kick', 4)
     expect(goal('Give the kick 4 even hits')).toHaveTextContent('✅')
-    expect(within(celebration()).getByLabelText('2 stars')).toHaveTextContent(/^⭐⭐$/)
+    expectStars(2, '⭐⭐')
     fireEvent.click(within(celebration()).getByRole('button', { name: 'Next level ▶' }))
     expect(onDone).toHaveBeenCalledWith(2)
   })
@@ -46,7 +54,7 @@ describe('Lesson', () => {
     lesson(LEVELS[0])
     setHits('Kick', 4)
     fireEvent.click(screen.getByRole('button', { name: 'Sounds right to me ✓' }))
-    expect(within(celebration()).getByLabelText('3 stars')).toBeInTheDocument()
+    expectStars(3, '⭐⭐⭐')
   })
 
   it('pressing Hint then meeting the goal earns 1 star', () => {
@@ -54,7 +62,7 @@ describe('Lesson', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Hint' }))
     expect(screen.getByText("Slide the kick's hits slider to 4.")).toBeInTheDocument()
     setHits('Kick', 4)
-    expect(within(celebration()).getByLabelText('1 star')).toHaveTextContent(/^⭐$/)
+    expectStars(1, '⭐')
   })
 
   it('coach shows bubbles one at a time with bold text', () => {
@@ -123,11 +131,11 @@ describe('Lesson', () => {
   it('earned stars stay after a goal becomes unmet again, and Hint stays off', () => {
     lesson(LEVELS[0])
     setHits('Kick', 4)
-    expect(within(celebration()).getByLabelText('2 stars')).toBeInTheDocument()
+    expectStars(2, '⭐⭐')
     setHits('Kick', 3)
     expect(goal('Give the kick 4 even hits')).toHaveTextContent('⬜')
     expect(screen.getByRole('button', { name: 'Hint' })).toBeDisabled()
-    expect(within(celebration()).getByLabelText('2 stars')).toBeInTheDocument()
+    expectStars(2, '⭐⭐')
   })
 
   it('undo leaves compare mode and plays the lesson song again', () => {

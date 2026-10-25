@@ -3,6 +3,8 @@ import { LEVELS, WORLDS } from '../../learn/levels.js'
 import { isUnlocked } from '../../learn/progress.js'
 import './Learn.css'
 
+const WORLD_COLORS = ['var(--drums)', 'var(--chords)', 'var(--bass)', 'var(--melody)', 'var(--gold)']
+
 function nodeName(level, progress) {
   const { id, title } = level
   if (!isUnlocked(progress, id)) return `Level ${id}, locked`
@@ -20,7 +22,7 @@ export default function LevelMap({ progress, onOpen, onBack }) {
         <h1 className="map-title">🎓 Learn</h1>
       </div>
       {WORLDS.map((name, w) => (
-        <section key={name} className="map-world" aria-labelledby={`world-${w + 1}`}>
+        <section key={name} className="map-world" style={{ '--c': WORLD_COLORS[w] }} aria-labelledby={`world-${w + 1}`}>
           <h2 id={`world-${w + 1}`} className="map-world-title">World {w + 1} · {name}</h2>
           <div className="map-row">
             {LEVELS.filter((l) => l.world === w + 1).map((l) => {
@@ -30,7 +32,7 @@ export default function LevelMap({ progress, onOpen, onBack }) {
               return (
                 <button
                   key={l.id} type="button" disabled={!open}
-                  className={`map-node${current ? ' current' : ''}${open ? '' : ' locked'}`}
+                  className={`map-node${current ? ' current' : ''}${open ? '' : ' locked'}${n > 0 ? ' done' : ''}`}
                   aria-label={nodeName(l, progress)} aria-current={current ? 'step' : undefined}
                   onClick={() => onOpen(l.id)}
                 >
