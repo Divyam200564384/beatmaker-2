@@ -30,7 +30,7 @@ function engineStatusText(status = {}) {
 
 export default function Studio({
   song, commit, preview, engine, tools = null, options = null, hints = [],
-  undo, redo, canUndo = false, canRedo = false, onMenu, statusText = '', onRetry,
+  undo, redo, canUndo = false, canRedo = false, onMenu, menuOpen = false, statusText = '',
 }) {
   const wide = useMediaQuery('(min-width: 900px)')
   const [tab, setTab] = useState('drums')
@@ -52,7 +52,7 @@ export default function Studio({
       <section key={l.id} className="studio-panel" id={`panel-${l.id}`} role={wide ? undefined : 'tabpanel'} aria-label={wide ? undefined : l.title}>
         <LayerHeader
           layer={l.id} title={l.title} song={song} commit={commit} preview={preview}
-          options={options} tools={tools} status={engine.status?.[l.id]} onRetry={onRetry}
+          options={options} tools={tools} status={engine.status?.[l.id]} onRetry={() => engine.retry?.(l.id)}
         />
         {body}
       </section>
@@ -65,7 +65,7 @@ export default function Studio({
         song={song} commit={commit} preview={preview}
         playing={engine.playing} onToggle={engine.toggle}
         onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo}
-        onMenu={onMenu} statusText={statusText || engineStatusText(engine.status)} tools={tools}
+        onMenu={onMenu} menuOpen={menuOpen} statusText={engineStatusText(engine.status) || statusText} tools={tools}
       />
       {hints.map((h) => <p key={h} className="studio-hint" role="note">{h}</p>)}
       <main className={`studio${wide ? ' studio-grid' : ''}`}>

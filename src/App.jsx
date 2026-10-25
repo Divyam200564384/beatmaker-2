@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Studio from './ui/Studio.jsx'
 import Home from './ui/Home.jsx'
 import Credits from './ui/Credits.jsx'
@@ -33,9 +33,11 @@ function storageWorks() {
 }
 
 function useHints(playing) {
+  const shown = useRef(false)
   const [hints, setHints] = useState(() => (storageWorks() ? [] : ["Progress can't be saved in this browser."]))
   useEffect(() => {
-    if (!playing || !isIos()) return
+    if (!playing || shown.current || !isIos()) return
+    shown.current = true
     const seen = safeGet('bm2.hints') ?? {}
     if (seen.silentSwitch) return
     safeSet('bm2.hints', { ...seen, silentSwitch: true })
@@ -50,6 +52,13 @@ export default function App() {
   const hints = useHints(engine.playing)
   const [screen, setScreen] = useState(() => (location.hash.length > 1 ? 'studio' : 'home'))
   const [menuOpen, setMenuOpen] = useState(false)
+  const closeMenu = useCallback(() => setMenuOpen(false), [])
+  const [showLoadError, setShowLoadError] = useState(true)
+  useEffect(() => {
+    if (engine.playing) { setShowLoadError(false); return }
+    const t = setTimeout(() => setShowLoadError(false), 5000)
+    return () => clearTimeout(t)
+  }, [engine.playing])
 
   if (screen === 'credits') return <Credits onBack={() => setScreen('home')} />
   if (screen === 'learn-map') {
@@ -75,11 +84,12 @@ export default function App() {
       <Studio
         song={song} commit={commit} preview={preview} engine={engine}
         undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}
-        onMenu={() => setMenuOpen((o) => !o)} statusText={loadError || ''} hints={hints}
+        onMenu={() => setMenuOpen((o) => !o)} menuOpen={menuOpen}
+        statusText={showLoadError ? loadError || '' : ''} hints={hints}
       />
       {menuOpen && (
         <Menu
-          onClose={() => setMenuOpen(false)}
+          onClose={closeMenu}
           onHome={() => { if (engine.playing) engine.toggle(); setScreen('home') }}
           onCredits={() => { if (engine.playing) engine.toggle(); setScreen('credits') }}
           onResetProgress={clearProgress}

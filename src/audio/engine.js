@@ -176,6 +176,8 @@ export function createEngine({ onStep = () => {}, onStatus = () => {} } = {}) {
     stop,
     setSong,
     switchLayer: (layer, id) => load(layer, id),
+    // Re-attempt the song's current id for a layer (setSong skips an id equal to `requested`).
+    retry: (layer) => (song ? load(layer, idFor(song, layer)) : undefined),
     preview,
     isPlaying: () => Boolean(clock?.isRunning()),
   };

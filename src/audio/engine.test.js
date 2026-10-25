@@ -223,6 +223,21 @@ describe("engine", () => {
     expect(old.start).toHaveBeenCalledTimes(1);
   });
 
+  it("retry reloads the song's current instrument after a failed switch", async () => {
+    const engine = createEngine({ onStep, onStatus });
+    const song = setInstrument(melodySong(), "melody", "flute");
+    await engine.start(melodySong());
+    h.state.failNext = ["404", "404"];
+    engine.setSong(song);
+    await flush();
+    await flush();
+    expect(onStatus).toHaveBeenCalledWith({ layer: "melody", state: "error", message: "404" });
+    onStatus.mockClear();
+    await engine.retry("melody");
+    expect(onStatus).toHaveBeenCalledWith({ layer: "melody", state: "ready" });
+    expect(insts("Soundfont", "flute").length).toBeGreaterThan(0);
+  });
+
   it("muting via setSong sets the mixer gain target to 0", async () => {
     const engine = createEngine({ onStep, onStatus });
     const song = createDefaultSong();

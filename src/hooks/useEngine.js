@@ -45,5 +45,7 @@ export function useEngine(song) {
 
   const preview = useCallback((layer, note) => get().preview(layer, note), [get])
 
-  return { playing, toggle, step, status, preview }
+  const retry = useCallback((layer) => get().retry(layer), [get])
+
+  return { playing, toggle, step, status, preview, retry }
 }

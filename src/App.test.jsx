@@ -57,6 +57,25 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Open studio' })).toBeInTheDocument()
   })
 
+  it('menu focuses its first item, Escape closes and refocuses the Menu button', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Open studio' }))
+    const menuBtn = screen.getByRole('button', { name: 'Menu' })
+    expect(menuBtn).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(menuBtn)
+    expect(menuBtn).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Home' })).toHaveFocus()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull()
+    expect(menuBtn).toHaveFocus()
+  })
+
+  it('shows a bad-link message when there is no engine status', () => {
+    history.replaceState(null, '', '#!!!notasong')
+    render(<App />)
+    expect(screen.getByText(/Couldn't read that song link/)).toBeInTheDocument()
+  })
+
   it('declining the confirm keeps progress', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false)
     localStorage.setItem('bm2.progress', '{}')

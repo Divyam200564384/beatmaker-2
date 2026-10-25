@@ -29,3 +29,12 @@ describe('useEngine', () => {
     expect(result.current.playing).toBe(false)
   })
 })
+
+describe('useEngine retry', () => {
+  it('retry forwards the layer to the engine', () => {
+    engine.retry = vi.fn()
+    const { result } = renderHook(() => useEngine(createDefaultSong()))
+    act(() => { result.current.retry('bass') })
+    expect(engine.retry).toHaveBeenCalledWith('bass')
+  })
+})

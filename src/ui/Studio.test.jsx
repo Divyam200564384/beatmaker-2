@@ -49,6 +49,26 @@ describe('Studio', () => {
     expect(screen.queryByRole('tab', { name: /Melody/ })).toBeNull()
   })
 
+  it('Retry calls the engine retry for that layer', () => {
+    const retry = vi.fn()
+    const eng = { ...engine, retry, status: { bass: { layer: 'bass', state: 'error', message: 'x' } } }
+    render(<Studio {...base()} engine={eng} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(retry).toHaveBeenCalledWith('bass')
+  })
+
+  it('shows engine status ahead of the load error', () => {
+    const eng = { ...engine, status: { bass: { layer: 'bass', state: 'loading', progress: 0.5 } } }
+    render(<Studio {...base()} engine={eng} statusText="Bad link" />)
+    expect(screen.getAllByRole('status').some((e) => /Loading… 50%/.test(e.textContent))).toBe(true)
+    expect(screen.queryByText('Bad link')).toBeNull()
+  })
+
+  it('marks the Menu button expanded', () => {
+    render(<Studio {...base()} menuOpen />)
+    expect(screen.getByRole('button', { name: 'Menu' })).toHaveAttribute('aria-expanded', 'true')
+  })
+
   it('shows hint messages', () => {
     render(<Studio {...base()} hints={['No sound? Check your silent switch.']} />)
     expect(screen.getByText('No sound? Check your silent switch.')).toBeInTheDocument()
