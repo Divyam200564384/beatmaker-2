@@ -1,7 +1,9 @@
 /* eslint-disable react/prop-types -- internal component; props documented in the task brief */
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Play, Square, Undo2, Redo2, Share2, Download, Menu } from 'lucide-react'
 import { NOTE_NAMES } from '../music/theory.js'
+import { setTempo, setKey } from '../song/model.js'
+import RangeSlider from './RangeSlider.jsx'
 import { renderSongWav } from '../audio/render.js'
 import './PlayBar.css'
 
@@ -11,13 +13,27 @@ export default function PlayBar({
 }) {
   const [msg, setMsg] = useState('')
   const [fallbackUrl, setFallbackUrl] = useState(null)
+  const [rendering, setRendering] = useState(false)
+  const timers = useRef(new Set())
+  const later = (fn, ms) => {
+    const t = setTimeout(() => { timers.current.delete(t); fn() }, ms)
+    timers.current.add(t)
+  }
+  useEffect(() => {
+    const all = timers.current
+    return () => all.forEach(clearTimeout)
+  }, [])
+  const flash = (text) => {
+    setMsg(text)
+    if (text) later(() => setMsg((m) => (m === text ? '' : m)), 3000)
+  }
   const show = (id) => tools === null || tools.has(id)
 
   async function share() {
     setFallbackUrl(null)
     try {
       await navigator.clipboard.writeText(location.href)
-      setMsg('Link copied!')
+      flash('Link copied!')
     } catch {
       setMsg('')
       setFallbackUrl(location.href)
@@ -27,6 +43,7 @@ export default function PlayBar({
 
   async function wav() {
     setMsg('Rendering…')
+    setRendering(true)
     try {
       const blob = await renderSongWav(song)
       const url = URL.createObjectURL(blob)
@@ -36,10 +53,12 @@ export default function PlayBar({
       document.body.appendChild(a)
       a.click()
       a.remove()
-      URL.revokeObjectURL(url)
+      later(() => URL.revokeObjectURL(url), 1000)
       setMsg('')
     } catch {
-      setMsg("Couldn't make the WAV. Try again")
+      flash("Couldn't make the WAV. Try again")
+    } finally {
+      setRendering(false)
     }
     onWav?.()
   }
@@ -53,10 +72,10 @@ export default function PlayBar({
       {show('tempo') && (
         <label className="playbar-field">
           <span>Tempo</span>
-          <input
-            type="range" min="70" max="140" value={song.tempo} aria-label="Tempo"
-            onInput={(e) => preview((s) => ({ ...s, tempo: Number(e.target.value) }))}
-            onChange={(e) => commit((s) => ({ ...s, tempo: Number(e.target.value) }))}
+          <RangeSlider
+            label="Tempo" min={70} max={140} value={song.tempo}
+            onPreview={(v) => preview((x) => setTempo(x, v))}
+            onCommit={(v) => commit((x) => setTempo(x, v))}
           />
           <output>{song.tempo}</output>
         </label>
@@ -64,7 +83,7 @@ export default function PlayBar({
       {show('key') && (
         <label className="playbar-field">
           <span>Key</span>
-          <select aria-label="Key" value={song.key} onChange={(e) => commit((s) => ({ ...s, key: Number(e.target.value) }))}>
+          <select aria-label="Key" value={song.key} onChange={(e) => commit((s) => setKey(s, Number(e.target.value)))}>
             {NOTE_NAMES.map((n, i) => <option key={n} value={i}>{n}</option>)}
           </select>
         </label>
@@ -79,7 +98,7 @@ export default function PlayBar({
         <button type="button" aria-label="Share" onClick={share}><Share2 aria-hidden="true" /></button>
       )}
       {show('wav') && (
-        <button type="button" aria-label="Save WAV" onClick={wav}><Download aria-hidden="true" /></button>
+        <button type="button" aria-label="Save WAV" disabled={rendering} onClick={wav}><Download aria-hidden="true" /></button>
       )}
       <button type="button" aria-label="Menu" onClick={onMenu}><Menu aria-hidden="true" /></button>
       {fallbackUrl && (

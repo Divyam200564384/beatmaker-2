@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import PlayBar from './PlayBar.jsx'
 import { createDefaultSong } from '../song/model.js'
 
@@ -45,8 +45,9 @@ describe('PlayBar', () => {
     const p = setup()
     fireEvent.input(screen.getByLabelText('Tempo'), { target: { value: '100' } })
     expect(p.preview).toHaveBeenCalled()
-    fireEvent.change(screen.getByLabelText('Tempo'), { target: { value: '100' } })
-    expect(p.commit).toHaveBeenCalled()
+    expect(p.commit).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('Tempo'))
+    expect(p.commit).toHaveBeenCalledTimes(1)
   })
   it('share copies the link', async () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue() } })
@@ -70,12 +71,41 @@ describe('PlayBar', () => {
     setup()
     fireEvent.click(screen.getByRole('button', { name: 'Save WAV' }))
     await waitFor(() => expect(click).toHaveBeenCalled())
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:x')
+    await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:x'), { timeout: 2000 })
+    expect(screen.getByRole('button', { name: 'Save WAV' })).not.toBeDisabled()
+  })
+  it('Save WAV is disabled while rendering', async () => {
+    let resolve
+    renderSongWav.mockReturnValue(new Promise((r) => { resolve = r }))
+    URL.createObjectURL = vi.fn(() => 'blob:y')
+    URL.revokeObjectURL = vi.fn()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    setup()
+    fireEvent.click(screen.getByRole('button', { name: 'Save WAV' }))
+    expect(screen.getByRole('button', { name: 'Save WAV' })).toBeDisabled()
+    await act(async () => { resolve(new Blob(['y'])) })
+    expect(screen.getByRole('button', { name: 'Save WAV' })).not.toBeDisabled()
   })
   it('Save WAV failure shows message', async () => {
     renderSongWav.mockRejectedValue(new Error('x'))
     setup()
     fireEvent.click(screen.getByRole('button', { name: 'Save WAV' }))
     expect(await screen.findByText('Couldn\'t make the WAV. Try again')).toBeInTheDocument()
+  })
+})
+
+describe('PlayBar status message', () => {
+  it('clears the local message after a few seconds so statusText shows', async () => {
+    vi.useFakeTimers()
+    try {
+      Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue() } })
+      setup({ statusText: 'Loading… 40%' })
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Share' })) })
+      expect(screen.getByText('Link copied!')).toBeInTheDocument()
+      act(() => { vi.advanceTimersByTime(3100) })
+      expect(screen.getByText('Loading… 40%')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
