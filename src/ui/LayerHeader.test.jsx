@@ -23,6 +23,17 @@ describe('LayerHeader', () => {
     expect(screen.getAllByRole('option')).toHaveLength(1)
   })
 
+  it('keeps the current instrument selectable when options exclude it', () => {
+    render(<Harness options={['marimba']} />)
+    expect(screen.getByLabelText('Instrument').value).toBe('electric_piano_1')
+  })
+
+  it('keeps the current kit selectable when options exclude it', () => {
+    const song = createDefaultSong()
+    render(<LayerHeader layer="drums" title="Drums" song={song} commit={vi.fn()} preview={vi.fn()} options={['LM-2']} />)
+    expect(screen.getByLabelText('Drum kit').value).toBe('TR-808')
+  })
+
   it('groups instruments by category', () => {
     const { container } = render(<Harness />)
     expect(container.querySelectorAll('optgroup').length).toBeGreaterThan(5)

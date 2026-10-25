@@ -10,7 +10,10 @@ const RINGS = [
   { id: 'perc', name: 'Perc', color: '#0ea5a4', r: 32 },
 ]
 const PERCS = [['openhat', 'Open hat'], ['tom', 'Tom'], ['cowbell', 'Cowbell'], ['rim', 'Rim']]
-const HIT_R = 12 // invisible touch circle (SVG units), ~44px on a phone
+// Invisible touch circle (SVG units). The fixed ring radii (92/72/52/32) make a full 44px target
+// impossible on a 375px phone: 12 units is ~37px wide, and radially only ~31px fits between rings,
+// so hit circles on neighbouring rings and the inner ring's neighbours overlap. Accepted compromise.
+const HIT_R = 12
 const angle = (i) => (i / 16) * 2 * Math.PI - Math.PI / 2
 const pos = (r, i) => [Math.cos(angle(i)) * r, Math.sin(angle(i)) * r]
 
@@ -47,7 +50,7 @@ export default function RhythmRings({ song, commit, preview, onSound, step = nul
                   className="rings-dot"
                   onClick={() => toggle(ring, i)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (!e.repeat && (e.key === 'Enter' || e.key === ' ')) {
                       e.preventDefault()
                       toggle(ring, i)
                     }
@@ -96,6 +99,7 @@ export default function RhythmRings({ song, commit, preview, onSound, step = nul
                   {PERCS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
                 </select>
               )}
+              {has('sliders') && (
               <label>
                 <span>hits {r.hits}</span>
                 <RangeSlider
@@ -104,6 +108,7 @@ export default function RhythmRings({ song, commit, preview, onSound, step = nul
                   onCommit={(v) => commit((s) => setRingEuclid(s, ring.id, v, s.drums.rings[ring.id].shift))}
                 />
               </label>
+              )}
               {has('shift') && (
                 <label>
                   <span>shift {r.shift}</span>

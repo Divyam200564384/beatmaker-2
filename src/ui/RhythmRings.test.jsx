@@ -52,8 +52,19 @@ describe('RhythmRings', () => {
   it('only kick tool shows 16 dots and no shift slider', () => {
     setup({ tools: new Set(['kick']) })
     expect(screen.getAllByRole('button', { name: /step \d+, (on|off)/ })).toHaveLength(16)
-    expect(screen.queryByRole('slider', { name: /shift/i })).toBeNull()
+    expect(screen.queryByRole('slider')).toBeNull()
+  })
+
+  it('sliders tool shows hits but not shift', () => {
+    setup({ tools: new Set(['kick', 'sliders']) })
     expect(screen.getByRole('slider', { name: /kick hits/i })).toBeTruthy()
+    expect(screen.queryByRole('slider', { name: /shift/i })).toBeNull()
+  })
+
+  it('ignores repeated keydown events', () => {
+    const p = setup()
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Kick step 2, off' }), { key: 'Enter', repeat: true })
+    expect(p.commit).not.toHaveBeenCalled()
   })
 
   it('shows sample labels with closest-sound note', () => {

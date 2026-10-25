@@ -9,7 +9,9 @@ const show = (tools, id) => !tools || tools.has(id)
 export default function LayerHeader({ layer, title, song, commit, preview, options = null, tools = null, status, onRetry }) {
   const isDrums = layer === 'drums'
   const mix = song[layer].mix
-  const allowed = (id) => !options || options.includes(id)
+  // The current choice always stays listed so the controlled select never shows a wrong value.
+  const current = isDrums ? song.drums.kit : song[layer].instrument
+  const allowed = (id) => !options || options.includes(id) || id === current
   const setMixPart = (partial) => commit((s) => setMix(s, layer, partial))
 
   let picker = null
